@@ -41,7 +41,11 @@ const PRODUCT_COLOR = [
   '#94D82D',
   '#FFC107'
 ];
-
+const BG = ['grey', 'white', 'blue', 'green', 'red', 'yellow'];
+const TATU = ['blood', 'scar', 'tatu'];
+const MEDEL = ['bitcoin', 'none', 'crystal'];
+const RAMEN = 'remen';
+const PHRASE = ['none', 'hodl_times', 'on_the_legend'];
 // ----------------------------------------------------------------------
 
 const products = [...Array(24)].map((_, index) => {
@@ -49,10 +53,16 @@ const products = [...Array(24)].map((_, index) => {
 
   return {
     id: faker.datatype.uuid(),
-    cover: mockImgProduct(setIndex),
+    cover: mockImgProduct(Math.ceil(Math.random() * 4)),
     name: PRODUCT_NAME[index],
     price: faker.datatype.number({ min: 4, max: 99, precision: 0.01 }),
     priceSale: setIndex % 3 ? null : faker.datatype.number({ min: 19, max: 29, precision: 0.01 }),
+    bg: BG[Math.floor(Math.random() * BG.length)],
+    tatu: TATU[Math.floor(Math.random() * TATU.length)],
+    medal: MEDEL[Math.floor(Math.random() * MEDEL.length)],
+    ramen: RAMEN,
+    train: Math.floor(Math.random() * 10),
+    phrase: PHRASE[Math.floor(Math.random() * PHRASE.length)],
     colors:
       (setIndex === 1 && PRODUCT_COLOR.slice(0, 2)) ||
       (setIndex === 2 && PRODUCT_COLOR.slice(1, 3)) ||
@@ -61,7 +71,7 @@ const products = [...Array(24)].map((_, index) => {
       (setIndex === 23 && PRODUCT_COLOR.slice(4, 6)) ||
       (setIndex === 24 && PRODUCT_COLOR.slice(5, 6)) ||
       PRODUCT_COLOR,
-    status: sample(['sale', 'new', '', ''])
+    status: sample(['on auction', 'new', 'sale', 'minted'])
   };
 });
 
