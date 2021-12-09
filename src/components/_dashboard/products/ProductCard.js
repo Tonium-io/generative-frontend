@@ -4,10 +4,10 @@ import { Link as RouterLink } from 'react-router-dom';
 import { Box, Card, Link, Typography, Stack } from '@mui/material';
 import { styled } from '@mui/material/styles';
 // utils
-import { fCurrency } from '../../../utils/formatNumber';
+// import { fCurrency } from '../../../utils/formatNumber';
 //
 import Label from '../../Label';
-import ColorPreview from '../../ColorPreview';
+// import ColorPreview from '../../ColorPreview';
 
 // ----------------------------------------------------------------------
 
@@ -26,7 +26,7 @@ ShopProductCard.propTypes = {
 };
 
 export default function ShopProductCard({ product }) {
-  const { name, cover, price, colors, status, priceSale } = product;
+  const { name, cover, status, bg, tatu, medal, ramen, train, phrase } = product;
 
   return (
     <Card>
@@ -34,7 +34,12 @@ export default function ShopProductCard({ product }) {
         {status && (
           <Label
             variant="filled"
-            color={(status === 'sale' && 'error') || 'info'}
+            color={
+              (status === 'sale' && 'error') ||
+              (status === 'minted' && 'success') ||
+              (status === 'new' && 'primary') ||
+              'info'
+            }
             sx={{
               zIndex: 9,
               top: 16,
@@ -49,14 +54,14 @@ export default function ShopProductCard({ product }) {
         <ProductImgStyle alt={name} src={cover} />
       </Box>
 
-      <Stack spacing={2} sx={{ p: 3 }}>
-        <Link to="#" color="inherit" underline="hover" component={RouterLink}>
+      <Stack sx={{ p: 3 }}>
+        <Link to="#" color="inherit" underline="hover" component={RouterLink} sx={{ mb: 2 }}>
           <Typography variant="subtitle2" noWrap>
             {name}
           </Typography>
         </Link>
 
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
+        {/* <Stack direction="row" alignItems="center" justifyContent="space-between">
           <ColorPreview colors={colors} />
           <Typography variant="subtitle1">
             <Typography
@@ -72,6 +77,30 @@ export default function ShopProductCard({ product }) {
             &nbsp;
             {fCurrency(price)}
           </Typography>
+        </Stack> */}
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography>bg</Typography>
+          <Typography>{bg}</Typography>
+        </Stack>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography>tatu</Typography>
+          <Typography>{tatu}</Typography>
+        </Stack>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography>medal</Typography>
+          <Typography>{medal}</Typography>
+        </Stack>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography>ramen</Typography>
+          <Typography>{ramen}</Typography>
+        </Stack>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography>Train #5</Typography>
+          <Typography>{train}</Typography>
+        </Stack>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Typography>phrase</Typography>
+          <Typography>{phrase}</Typography>
         </Stack>
       </Stack>
     </Card>
