@@ -4,11 +4,10 @@ import { Link as RouterLink } from 'react-router-dom';
 import { Box, Card, Link, Typography, Stack } from '@mui/material';
 import { styled } from '@mui/material/styles';
 // utils
-// import { fCurrency } from '../../../utils/formatNumber';
+import { fCurrency } from '../../../utils/formatNumber';
 //
 import Label from '../../Label';
 // import ColorPreview from '../../ColorPreview';
-
 // ----------------------------------------------------------------------
 
 const ProductImgStyle = styled('img')({
@@ -26,7 +25,7 @@ ShopProductCard.propTypes = {
 };
 
 export default function ShopProductCard({ product }) {
-  const { name, cover, status, bg, tatu, medal, ramen, train, phrase } = product;
+  const { name, cover, status, bg, tatu, medal, ramen, train, phrase, priceSale, price } = product;
 
   return (
     <Card>
@@ -61,23 +60,25 @@ export default function ShopProductCard({ product }) {
           </Typography>
         </Link>
 
-        {/* <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <ColorPreview colors={colors} />
-          <Typography variant="subtitle1">
-            <Typography
-              component="span"
-              variant="body1"
-              sx={{
-                color: 'text.disabled',
-                textDecoration: 'line-through'
-              }}
-            >
-              {priceSale && fCurrency(priceSale)}
+        {status === 'on auction' && (
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            {/* <ColorPreview colors={colors} /> */}
+            <Typography variant="subtitle1">
+              <Typography
+                component="span"
+                variant="body1"
+                sx={{
+                  color: 'text.disabled',
+                  textDecoration: 'line-through'
+                }}
+              >
+                {priceSale && fCurrency(priceSale)}
+              </Typography>
+              &nbsp;
+              {fCurrency(price)}
             </Typography>
-            &nbsp;
-            {fCurrency(price)}
-          </Typography>
-        </Stack> */}
+          </Stack>
+        )}
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Typography>bg</Typography>
           <Typography>{bg}</Typography>

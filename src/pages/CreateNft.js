@@ -502,7 +502,15 @@ export default function CreateNFT() {
                           }}
                           sx={{ mb: 2 }}
                         >
-                          <Box sx={{ pt: '100%', position: 'relative' }}>
+                          <Box
+                            sx={{
+                              pt: '100%',
+                              position: 'relative',
+                              background: 'url(/static/bg.svg)',
+                              backgroundSize: '20px',
+                              backgroundRepeat: 'repeat'
+                            }}
+                          >
                             <DeleteIcon
                               variant="filled"
                               color="error"
