@@ -61,10 +61,24 @@ export default function DashboardSidebar({ isOpenSidebar, onCloseSidebar }) {
         '& .simplebar-content': { height: '100%', display: 'flex', flexDirection: 'column' }
       }}
     >
-      <Box sx={{ px: 2.5, py: 3 }}>
-        <Box component={RouterLink} to="/" sx={{ display: 'inline-flex' }}>
+      <Box
+        sx={{
+          px: 2.5,
+          py: 3,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <Box component={RouterLink} to="/" sx={{ mr: 1 }}>
           <Logo />
         </Box>
+        <Stack>
+          <Typography variant="h4">NeFerTiti</Typography>
+          <Typography sx={{ color: '#637381', fontSize: '12px', mt: -1 }}>
+            NFT candy machine
+          </Typography>
+        </Stack>
       </Box>
 
       <Box sx={{ mb: 5, mx: 2.5 }}>
@@ -113,11 +127,11 @@ export default function DashboardSidebar({ isOpenSidebar, onCloseSidebar }) {
             bgcolor: 'grey.200'
           }}
         >
-          <Box
+          {/* <Box
             component="img"
             src="/static/logo.svg"
             sx={{ width: 60, position: 'absolute', top: -50 }}
-          />
+          /> */}
 
           <Box sx={{ textAlign: 'center' }}>
             <Typography gutterBottom>
@@ -128,7 +142,7 @@ export default function DashboardSidebar({ isOpenSidebar, onCloseSidebar }) {
                 <TelegramIcon />
               </Link>
             </Typography>
-            <Typography>NeFerTiti</Typography>
+            <Typography>NeFerTiti &#169;2021</Typography>
             <Typography>
               <Link
                 href="https://drive.google.com/file/d/1mXScyRSkHIfHR_J3KExNLa4bL0da483j/view?usp=sharing"
