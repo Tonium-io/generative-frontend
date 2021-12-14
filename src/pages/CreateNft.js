@@ -365,7 +365,7 @@ export default function CreateNFT() {
     await ton.provider.sendMessage({
       sender: account.address,
       recipient: rootAddress,
-      amount: (5 * 10 ** 9).toString(),
+      amount: (100 * 10 ** 9).toString(),
       bounce: false
     });
     await root.deploy({
@@ -377,6 +377,9 @@ export default function CreateNFT() {
       }
     });
     console.debug('Root deployed');
+    // TODO: Subscribe for account status instead of temporary timeout
+    console.debug('Timeout 5s');
+    await new Promise((resolve) => setTimeout(resolve, 5000));
 
     // Upload metadata
     let meta = Buffer.from(JSON.stringify(metadata)).toString('base64');
