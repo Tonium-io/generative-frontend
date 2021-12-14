@@ -96,7 +96,7 @@ export default function ShopProductCard({ product }) {
           <Typography>{ramen}</Typography>
         </Stack>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography>Train #5</Typography>
+          <Typography>Trait #5</Typography>
           <Typography>{train}</Typography>
         </Stack>
         <Stack direction="row" alignItems="center" justifyContent="space-between">

@@ -151,7 +151,7 @@ export default function CreateNFT() {
       ...layerData,
       {
         id: Math.floor(Math.random() * 1000),
-        traitName: `Train #${layerData.length + 1}`,
+        traitName: `Trait #${layerData.length + 1}`,
         imagArr: []
       }
     ]);
