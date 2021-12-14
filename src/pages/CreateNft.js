@@ -25,12 +25,21 @@ import mergeImages from 'merge-images';
 import { styled } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
 // components
+import { Account } from '@tonclient/appkit';
+import { signerKeys } from '@tonclient/core';
 import Page from '../components/Page';
 import NFTList from '../components/_dashboard/nft/NFTList';
 import DeleteCardDialog from '../components/_dashboard/nft/DeleteCardDialog';
 import { validateForm } from '../components/_dashboard/nft/validateForm';
 
 import StoreContext from '../store/StoreContext';
+import UploaderTVC from '../assets/contracts/UploadDeGenerative.tvc';
+import UploaderABI from '../assets/contracts/UploadDeGenerative.abi.json';
+import RootTVC from '../assets/contracts/NftRoot.tvc';
+import RootABI from '../assets/contracts/NftRoot.abi.json';
+import IndexTVC from '../assets/contracts/Index.tvc';
+import DataTVC from '../assets/contracts/Data.tvc';
+import { readBinaryFile } from '../utils/helpers';
 
 // let ipfs;
 // IPFS.create().then(async (node) => {
@@ -61,6 +70,7 @@ export default function CreateNFT() {
   const [layerData, setLayerData] = useState([]);
   const [totalImages, setTotalImages] = useState(10);
   const [nftPrice, setNftPrice] = useState(100);
+  const [nftPriceCoeff, setNftPriceCoeff] = useState(1);
   const [nftData, setNftData] = useState([]);
   const [currentLayer, setCurrentLayer] = useState();
   const [currentDeletedIndex, setCurrentDeletedIndex] = useState();
@@ -68,7 +78,7 @@ export default function CreateNFT() {
   const [currentDeleting, setCurrentDeleting] = useState('');
   const [isSpinner, setIsSpinner] = useState(false);
   const {
-    state: { account }
+    state: { account, ton }
   } = useContext(StoreContext);
 
   const { getRootProps, getInputProps, acceptedFiles, isDragActive } = useDropzone();
@@ -131,14 +141,16 @@ export default function CreateNFT() {
         image: `ipfs://${uploadedData[key]}`
       });
     }
-    setIsSpinner(false);
-    const a = document.createElement('a');
-    const file = new Blob([JSON.stringify(returnData)], { type: 'application/json' });
-    a.href = URL.createObjectURL(file);
-    a.download = 'nefertit_io_generated_data.json';
-    a.click();
 
-    return returnData;
+    await uploadBlockchainData(returnData);
+    setIsSpinner(false);
+    // const a = document.createElement('a');
+    // const file = new Blob([JSON.stringify(returnData)], { type: 'application/json' });
+    // a.href = URL.createObjectURL(file);
+    // a.download = 'nefertit_io_generated_data.json';
+    // a.click();
+    //
+    // return returnData;
   };
 
   useEffect(() => {
@@ -296,6 +308,91 @@ export default function CreateNFT() {
     setOpen(false);
   };
 
+  /**
+   * Deploy NFT contracts (Uploader, Root)
+   * @param metadata
+   * @return {Promise<void>}
+   */
+  const uploadBlockchainData = async (metadata) => {
+    const keypair = await ton.client.crypto.generate_random_sign_keys();
+    const signer = signerKeys(keypair);
+    console.log('Keypair', keypair);
+
+    // Create and deploy `Uploader` account
+    const uploader = new Account(
+      {
+        abi: UploaderABI,
+        tvc: Buffer.from(await readBinaryFile(UploaderTVC)).toString('base64')
+      },
+      { client: ton.client, signer }
+    );
+    const uploaderAddress = await uploader.getAddress();
+    console.debug('Uploader address', uploaderAddress);
+
+    await ton.provider.sendMessage({
+      sender: account.address,
+      recipient: uploaderAddress,
+      amount: (100 * 10 ** 9).toString(),
+      bounce: false
+    });
+    await uploader.deploy();
+    console.debug('Uploader deployed');
+
+    // Create and deploy `NFT Root` account
+    const indexCode = await ton.client.boc.get_code_from_tvc({
+      tvc: Buffer.from(await readBinaryFile(IndexTVC)).toString('base64')
+    });
+    const dataCode = await ton.client.boc.get_code_from_tvc({
+      tvc: Buffer.from(await readBinaryFile(DataTVC)).toString('base64')
+    });
+    const root = new Account(
+      {
+        abi: RootABI,
+        tvc: Buffer.from(await readBinaryFile(RootTVC)).toString('base64')
+      },
+      {
+        client: ton.client,
+        signer,
+        initData: {
+          _addrOwner: uploaderAddress,
+          _name: Buffer.from(collectionName).toString('hex')
+        }
+      }
+    );
+    const rootAddress = await root.getAddress();
+    console.debug('Root address', rootAddress);
+
+    await ton.provider.sendMessage({
+      sender: account.address,
+      recipient: rootAddress,
+      amount: (5 * 10 ** 9).toString(),
+      bounce: false
+    });
+    await root.deploy({
+      initInput: {
+        codeIndex: indexCode.code,
+        codeData: dataCode.code,
+        pay: nftPrice,
+        koef: nftPriceCoeff
+      }
+    });
+    console.debug('Root deployed');
+
+    // Upload metadata
+    let meta = Buffer.from(JSON.stringify(metadata)).toString('base64');
+    console.debug('Metadata before compress', meta);
+    meta = await ton.client.utils.compress_zstd({ uncompressed: meta });
+    console.debug('Metadata after compress', meta.compressed);
+    meta = Buffer.from(meta.compressed, 'base64').toString('hex');
+    console.debug('Metadata after compress (HEX)', meta);
+    await uploader.run('sendMetadata', { adr: rootAddress, metadata: meta }, { signer });
+    console.debug('Metadata sent');
+
+    // Finish
+    await uploader.run('startSelling', { adr: rootAddress }, { signer });
+    console.debug('Finished');
+  };
+
   if (!account.isReady) {
     return (
       <Page title="Create you new Nft">
@@ -417,6 +514,26 @@ export default function CreateNFT() {
             />
             {isSubmitClick && !nftPrice ? (
               <FormHelperText error>Please Enter price of NFTs greater than 0</FormHelperText>
+            ) : (
+              ''
+            )}
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <TextField
+              label="NFT price coefficient"
+              type="number"
+              value={nftPriceCoeff}
+              onChange={(e) => {
+                const number = e.target.value;
+                if (number >= 0) {
+                  setNftPriceCoeff(number);
+                }
+              }}
+              error={isSubmitClick && !nftPriceCoeff}
+              fullWidth
+            />
+            {isSubmitClick && !nftPriceCoeff ? (
+              <FormHelperText error>Please Enter price coefficient greater than 0</FormHelperText>
             ) : (
               ''
             )}
