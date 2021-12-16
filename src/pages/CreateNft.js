@@ -25,7 +25,6 @@ import mergeImages from 'merge-images';
 import { styled } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
 // components
-import { Account } from '@tonclient/appkit';
 import { signerKeys } from '@tonclient/core';
 import Page from '../components/Page';
 import NFTList from '../components/_dashboard/nft/NFTList';
@@ -39,7 +38,7 @@ import RootTVC from '../assets/contracts/NftRoot.tvc';
 import RootABI from '../assets/contracts/NftRoot.abi.json';
 import IndexTVC from '../assets/contracts/Index.tvc';
 import DataTVC from '../assets/contracts/Data.tvc';
-import { readBinaryFile } from '../utils/helpers';
+import { everscaleAccount, everscaleDeployWithWallet, readBinaryFile } from '../utils/helpers';
 
 // let ipfs;
 // IPFS.create().then(async (node) => {
@@ -309,91 +308,98 @@ export default function CreateNFT() {
   };
 
   /**
-   * Deploy NFT contracts (Uploader, Root)
+   * Deploy NFT contracts (Uploader, Root) and upload metadata
    * @param metadata
    * @return {Promise<void>}
    */
   const uploadBlockchainData = async (metadata) => {
-    const keypair = await ton.client.crypto.generate_random_sign_keys();
+    const phrase = await ton.client.crypto.mnemonic_from_random({});
+    const keypair = await ton.client.crypto.mnemonic_derive_sign_keys({ phrase: phrase.phrase });
     const signer = signerKeys(keypair);
+    console.log('Phrase', phrase.phrase);
     console.log('Keypair', keypair);
 
     // Create and deploy `Uploader` account
-    const uploader = new Account(
-      {
-        abi: UploaderABI,
-        tvc: Buffer.from(await readBinaryFile(UploaderTVC)).toString('base64')
-      },
-      { client: ton.client, signer }
-    );
-    const uploaderAddress = await uploader.getAddress();
-    console.debug('Uploader address', uploaderAddress);
-
-    await ton.provider.sendMessage({
-      sender: account.address,
-      recipient: uploaderAddress,
-      amount: (100 * 10 ** 9).toString(),
-      bounce: false
+    const uploader = await everscaleAccount(UploaderABI, UploaderTVC, {
+      client: ton.client,
+      signer
     });
-    await uploader.deploy();
-    console.debug('Uploader deployed');
+    console.log('Uploader address:', await uploader.getAddress());
+    await everscaleDeployWithWallet(
+      ton.provider,
+      {
+        sender: account.address,
+        amount: (20 * 10 ** 9).toString(),
+        bounce: false
+      },
+      uploader
+    );
 
-    // Create and deploy `NFT Root` account
-    const indexCode = await ton.client.boc.get_code_from_tvc({
+    // Create and deploy `NFTRoot` account
+    const codeIndex = await ton.client.boc.get_code_from_tvc({
       tvc: Buffer.from(await readBinaryFile(IndexTVC)).toString('base64')
     });
-    const dataCode = await ton.client.boc.get_code_from_tvc({
+    const codeData = await ton.client.boc.get_code_from_tvc({
       tvc: Buffer.from(await readBinaryFile(DataTVC)).toString('base64')
     });
-    const root = new Account(
+    const root = await everscaleAccount(RootABI, RootTVC, {
+      client: ton.client,
+      signer,
+      initData: {
+        _addrOwner: await uploader.getAddress(),
+        _name: Buffer.from(collectionName).toString('hex')
+      }
+    });
+    const rootAddress = await root.getAddress();
+    console.log('Root address:', rootAddress);
+    await everscaleDeployWithWallet(
+      ton.provider,
       {
-        abi: RootABI,
-        tvc: Buffer.from(await readBinaryFile(RootTVC)).toString('base64')
+        sender: account.address,
+        amount: (100 ** 9).toString(),
+        bounce: false
       },
+      root,
       {
-        client: ton.client,
-        signer,
-        initData: {
-          _addrOwner: uploaderAddress,
-          _name: Buffer.from(collectionName).toString('hex')
+        initInput: {
+          codeIndex: codeIndex.code,
+          codeData: codeData.code,
+          pay: nftPrice,
+          koef: nftPriceCoeff
         }
       }
     );
-    const rootAddress = await root.getAddress();
-    console.debug('Root address', rootAddress);
-
-    await ton.provider.sendMessage({
-      sender: account.address,
-      recipient: rootAddress,
-      amount: (100 * 10 ** 9).toString(),
-      bounce: false
-    });
-    await root.deploy({
-      initInput: {
-        codeIndex: indexCode.code,
-        codeData: dataCode.code,
-        pay: nftPrice,
-        koef: nftPriceCoeff
-      }
-    });
-    console.debug('Root deployed');
-    // TODO: Subscribe for account status instead of temporary timeout
-    console.debug('Timeout 5s');
-    await new Promise((resolve) => setTimeout(resolve, 5000));
 
     // Upload metadata
-    let meta = Buffer.from(JSON.stringify(metadata)).toString('base64');
-    console.debug('Metadata before compress', meta);
-    meta = await ton.client.utils.compress_zstd({ uncompressed: meta });
-    console.debug('Metadata after compress', meta.compressed);
-    meta = Buffer.from(meta.compressed, 'base64').toString('hex');
-    console.debug('Metadata after compress (HEX)', meta);
-    await uploader.run('sendMetadata', { adr: rootAddress, metadata: meta }, { signer });
+    await Promise.all(
+      metadata.map(async (item) => {
+        const uncompressed = Buffer.from(JSON.stringify(item)).toString('base64');
+        const zstd = await ton.client.utils.compress_zstd({ uncompressed });
+        await uploader.run('sendMetadata', {
+          adr: rootAddress,
+          metadata: Buffer.from(zstd.compressed, 'base64').toString('hex')
+        });
+      })
+    );
     console.debug('Metadata sent');
 
-    // Finish
+    // Start selling
     await uploader.run('startSelling', { adr: rootAddress }, { signer });
-    console.debug('Finished');
+    console.debug('Selling started');
+
+    // Save contracts' data
+    const personal = {
+      uploader: await uploader.getAddress(),
+      root: rootAddress,
+      phrase: phrase.phrase,
+      keys: keypair
+    };
+    const a = document.createElement('a');
+    const file = new Blob([JSON.stringify(personal)], { type: 'application/json' });
+    a.href = URL.createObjectURL(file);
+    a.download = 'contracts.json';
+    a.click();
+    a.remove();
   };
 
   if (!account.isReady) {
