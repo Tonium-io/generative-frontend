@@ -92,20 +92,20 @@ const MintNft = () => {
             <h3>Mint by admin</h3>
             <Formik
               initialValues={{
-                uploader: '',
-                root: '',
-                phrase: ''
+                // uploader: '',
+                root: ''
+                // phrase: ''
               }}
               validationSchema={Yup.object().shape({
-                uploader: Yup.string().required(),
-                root: Yup.string().required(),
-                phrase: Yup.string().required()
+                // uploader: Yup.string().required(),
+                root: Yup.string().required()
+                // phrase: Yup.string().required()
               })}
               onSubmit={onMintAdminHandler}
             >
               {({ errors, touched, isSubmitting }) => (
                 <Form>
-                  <Field name="uploader">
+                  {/* <Field name="uploader">
                     {({ field, form }) => (
                       <TextField
                         label="Uploader address"
@@ -118,7 +118,7 @@ const MintNft = () => {
                   </Field>
                   {touched.uploader && errors.uploader && (
                     <FormHelperText error>{errors.uploader}</FormHelperText>
-                  )}
+                  )} */}
 
                   <Field name="root">
                     {({ field, form }) => (
@@ -128,6 +128,7 @@ const MintNft = () => {
                         autoComplete="off"
                         error={form.touched.root && Boolean(form.errors.root)}
                         {...field}
+                        sx={{ mt: 2, mb: 2 }}
                       />
                     )}
                   </Field>
@@ -135,7 +136,7 @@ const MintNft = () => {
                     <FormHelperText error>{errors.root}</FormHelperText>
                   )}
 
-                  <Field name="phrase">
+                  {/* <Field name="phrase">
                     {({ field, form }) => (
                       <TextField
                         label="NFT mnemonic phrase"
@@ -148,7 +149,7 @@ const MintNft = () => {
                   </Field>
                   {touched.phrase && errors.phrase && (
                     <FormHelperText error>{errors.phrase}</FormHelperText>
-                  )}
+                  )} */}
 
                   <div>
                     <Button
@@ -189,6 +190,7 @@ const MintNft = () => {
                         autoComplete="off"
                         error={form.touched.root && Boolean(form.errors.root)}
                         {...field}
+                        sx={{ mt: 2, mb: 2 }}
                       />
                     )}
                   </Field>
@@ -204,6 +206,7 @@ const MintNft = () => {
                         autoComplete="off"
                         error={form.touched.price && Boolean(form.errors.price)}
                         {...field}
+                        sx={{ mb: 2 }}
                       />
                     )}
                   </Field>
