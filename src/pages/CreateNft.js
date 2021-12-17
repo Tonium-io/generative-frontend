@@ -30,6 +30,7 @@ import { Account } from '@tonclient/appkit';
 import Page from '../components/Page';
 import NFTList from '../components/_dashboard/nft/NFTList';
 import DeleteCardDialog from '../components/_dashboard/nft/DeleteCardDialog';
+import DetailModal from '../components/_dashboard/nft/DetailModal';
 import { validateForm } from '../components/_dashboard/nft/validateForm';
 
 import StoreContext from '../store/StoreContext';
@@ -81,6 +82,7 @@ export default function CreateNFT() {
   const [currentLayer, setCurrentLayer] = useState();
   const [currentDeletedIndex, setCurrentDeletedIndex] = useState();
   const [open, setOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [currentDeleting, setCurrentDeleting] = useState('');
   const [isSpinner, setIsSpinner] = useState(false);
   const {
@@ -301,6 +303,10 @@ export default function CreateNFT() {
 
   const handleClose = () => {
     setOpen(false);
+  };
+
+  const handleModalClose = () => {
+    setIsOpen(!isOpen);
   };
 
   const handleImageDelete = () => {
@@ -572,9 +578,14 @@ export default function CreateNFT() {
             )}
           </Grid>
         </Grid>
-        <Typography variant="h6" sx={{ marginTop: 5 }}>
-          Layers
-        </Typography>
+        <Stack direction="row" alignItems="flex-end" justifyContent="space-between">
+          <Typography variant="h6" sx={{ marginTop: 5 }}>
+            Layers
+          </Typography>
+          <Button onClick={handleModalClose} variant="contained">
+            New Button
+          </Button>
+        </Stack>
         {layerData &&
           layerData.map((data) => (
             <Card variant="outlined" key={data.id} sx={{ margin: '10px 0' }}>
@@ -761,6 +772,7 @@ export default function CreateNFT() {
         handleDelete={currentDeleting === 'card' ? handleImageDelete : handleDeleteLayer}
         currentDeleting={currentDeleting}
       />
+      <DetailModal isOpen={isOpen} handleModalClose={handleModalClose} />
     </Page>
   );
 }

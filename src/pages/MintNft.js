@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { signerKeys } from '@tonclient/core';
 import Page from '../components/Page';
@@ -17,11 +17,13 @@ import StoreContext from '../store/StoreContext';
 import UploaderABI from '../assets/contracts/UploadDeGenerative.abi.json';
 import RootABI from '../assets/contracts/NftRoot.abi.json';
 import { everscaleAccount } from '../utils/helpers';
+import MintNFTModal from '../components/_dashboard/nft/MintNFTModal';
 
 const MintNft = () => {
   const {
     state: { account, ton }
   } = useContext(StoreContext);
+  const [isOpen, setIsOpen] = useState(false);
 
   /**
    * Mint by admin (by Uploader)
@@ -68,6 +70,10 @@ const MintNft = () => {
     formikHelpers.resetForm({});
   };
 
+  const handleModalClose = () => {
+    setIsOpen(!isOpen);
+  };
+
   if (!account.isReady) {
     return (
       <Page title="Mint NFT">
@@ -92,20 +98,20 @@ const MintNft = () => {
             <h3>Mint by admin</h3>
             <Formik
               initialValues={{
-                uploader: '',
-                root: '',
-                phrase: ''
+                // uploader: '',
+                root: ''
+                // phrase: ''
               }}
               validationSchema={Yup.object().shape({
-                uploader: Yup.string().required(),
-                root: Yup.string().required(),
-                phrase: Yup.string().required()
+                // uploader: Yup.string().required(),
+                root: Yup.string().required()
+                // phrase: Yup.string().required()
               })}
               onSubmit={onMintAdminHandler}
             >
               {({ errors, touched, isSubmitting }) => (
                 <Form>
-                  <Field name="uploader">
+                  {/* <Field name="uploader">
                     {({ field, form }) => (
                       <TextField
                         label="Uploader address"
@@ -118,7 +124,7 @@ const MintNft = () => {
                   </Field>
                   {touched.uploader && errors.uploader && (
                     <FormHelperText error>{errors.uploader}</FormHelperText>
-                  )}
+                  )} */}
 
                   <Field name="root">
                     {({ field, form }) => (
@@ -128,6 +134,7 @@ const MintNft = () => {
                         autoComplete="off"
                         error={form.touched.root && Boolean(form.errors.root)}
                         {...field}
+                        sx={{ mt: 2, mb: 2 }}
                       />
                     )}
                   </Field>
@@ -135,7 +142,7 @@ const MintNft = () => {
                     <FormHelperText error>{errors.root}</FormHelperText>
                   )}
 
-                  <Field name="phrase">
+                  {/* <Field name="phrase">
                     {({ field, form }) => (
                       <TextField
                         label="NFT mnemonic phrase"
@@ -148,7 +155,7 @@ const MintNft = () => {
                   </Field>
                   {touched.phrase && errors.phrase && (
                     <FormHelperText error>{errors.phrase}</FormHelperText>
-                  )}
+                  )} */}
 
                   <div>
                     <Button
@@ -189,6 +196,7 @@ const MintNft = () => {
                         autoComplete="off"
                         error={form.touched.root && Boolean(form.errors.root)}
                         {...field}
+                        sx={{ mt: 2, mb: 2 }}
                       />
                     )}
                   </Field>
@@ -204,6 +212,7 @@ const MintNft = () => {
                         autoComplete="off"
                         error={form.touched.price && Boolean(form.errors.price)}
                         {...field}
+                        sx={{ mb: 2 }}
                       />
                     )}
                   </Field>
@@ -227,7 +236,11 @@ const MintNft = () => {
             </Formik>
           </Grid>
         </Grid>
+        <Button onClick={handleModalClose} variant="contained">
+          New Button
+        </Button>
       </Container>
+      <MintNFTModal isOpen={isOpen} handleModalClose={handleModalClose} />
     </Page>
   );
 };
