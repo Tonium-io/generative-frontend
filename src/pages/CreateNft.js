@@ -356,7 +356,7 @@ export default function CreateNFT() {
       ton.provider,
       {
         sender: account.address,
-        amount: (100 ** 9).toString(),
+        amount: (100 * 10 ** 9).toString(),
         bounce: false
       },
       root,
