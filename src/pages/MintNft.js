@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { signerKeys } from '@tonclient/core';
 import Page from '../components/Page';
@@ -17,11 +17,13 @@ import StoreContext from '../store/StoreContext';
 import UploaderABI from '../assets/contracts/UploadDeGenerative.abi.json';
 import RootABI from '../assets/contracts/NftRoot.abi.json';
 import { everscaleAccount } from '../utils/helpers';
+import MintNFTModal from '../components/_dashboard/nft/MintNFTModal';
 
 const MintNft = () => {
   const {
     state: { account, ton }
   } = useContext(StoreContext);
+  const [isOpen, setIsOpen] = useState(false);
 
   /**
    * Mint by admin (by Uploader)
@@ -66,6 +68,10 @@ const MintNft = () => {
     });
     console.debug('Minted');
     formikHelpers.resetForm({});
+  };
+
+  const handleModalClose = () => {
+    setIsOpen(!isOpen);
   };
 
   if (!account.isReady) {
@@ -230,7 +236,11 @@ const MintNft = () => {
             </Formik>
           </Grid>
         </Grid>
+        <Button onClick={handleModalClose} variant="contained">
+          New Button
+        </Button>
       </Container>
+      <MintNFTModal isOpen={isOpen} handleModalClose={handleModalClose} />
     </Page>
   );
 };
