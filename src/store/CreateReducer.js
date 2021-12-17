@@ -50,7 +50,7 @@ const CreateReducer = () => {
     }
   });
   useEffect(() => {
-    InitTon(dispatch);
+    InitTon(dispatch).then();
 
     window.ton.on('networkChanged', (data) => {
       dispatch({

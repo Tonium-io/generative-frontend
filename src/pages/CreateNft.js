@@ -24,9 +24,10 @@ import { useDropzone } from 'react-dropzone';
 import mergeImages from 'merge-images';
 import { styled } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
+import QRCode from 'qrcode.react';
+import CopyToClipboard from 'react-copy-to-clipboard';
 // components
-import { abiJson, signerKeys, Signer, signerExternal } from '@tonclient/core';
-import { Account } from '@tonclient/appkit';
+import { signerExternal } from '@tonclient/core';
 import Page from '../components/Page';
 import NFTList from '../components/_dashboard/nft/NFTList';
 import DeleteCardDialog from '../components/_dashboard/nft/DeleteCardDialog';
@@ -82,7 +83,7 @@ export default function CreateNFT() {
   const [currentLayer, setCurrentLayer] = useState();
   const [currentDeletedIndex, setCurrentDeletedIndex] = useState();
   const [open, setOpen] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [modal, setModal] = useState({ isOpen: false, title: undefined, content: undefined });
   const [currentDeleting, setCurrentDeleting] = useState('');
   const [isSpinner, setIsSpinner] = useState(false);
   const {
@@ -150,8 +151,26 @@ export default function CreateNFT() {
       });
     }
 
-    await uploadBlockchainData(returnData);
+    const rootAddress = await uploadBlockchainData(returnData);
     setIsSpinner(false);
+    setModal({
+      isOpen: true,
+      title: 'Deploy NFTs',
+      content: (
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={4}>
+            <QRCode value={rootAddress} />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <h3>Root address for minting</h3>
+            <CopyToClipboard text={rootAddress} onCopy={() => alert('Copied')}>
+              <div style={{ wordBreak: 'break-all', cursor: 'pointer' }}>{rootAddress}</div>
+            </CopyToClipboard>
+          </Grid>
+        </Grid>
+      )
+    });
+
     // const a = document.createElement('a');
     // const file = new Blob([JSON.stringify(returnData)], { type: 'application/json' });
     // a.href = URL.createObjectURL(file);
@@ -306,7 +325,7 @@ export default function CreateNFT() {
   };
 
   const handleModalClose = () => {
-    setIsOpen(!isOpen);
+    setModal({ isOpen: !modal.isOpen, title: undefined, content: undefined });
   };
 
   const handleImageDelete = () => {
@@ -381,26 +400,47 @@ export default function CreateNFT() {
     );
 
     // Upload metadata
-    await Promise.all(
-      metadata.map(async (item) => {
-        const uncompressed = Buffer.from(JSON.stringify(item)).toString('base64');
-        const zstd = await ton.client.utils.compress_zstd({ uncompressed });
-        const encodeSendMetadata = {
-          abi: uploader.abi,
-          address: uploaderAddress,
-          call_set: {
-            function_name: 'sendMetadata',
-            input: {
-              adr: rootAddress,
-              metadata: Buffer.from(zstd.compressed, 'base64').toString('hex')
-            }
-          },
-          signer: signerExternal(account.public)
-        };
-        const signed = await everscaleSignWithWallet(ton.provider, ton.client, encodeSendMetadata);
-        await everscaleSendMessage(ton.client, signed.message, uploader.abi);
-      })
-    );
+    for (const item of metadata) {
+      const uncompressed = Buffer.from(JSON.stringify(item)).toString('base64');
+      // eslint-disable-next-line no-await-in-loop
+      const zstd = await ton.client.utils.compress_zstd({ uncompressed });
+      const encodeSendMetadata = {
+        abi: uploader.abi,
+        address: uploaderAddress,
+        call_set: {
+          function_name: 'sendMetadata',
+          input: {
+            adr: rootAddress,
+            metadata: Buffer.from(zstd.compressed, 'base64').toString('hex')
+          }
+        },
+        signer: signerExternal(account.public)
+      };
+      // eslint-disable-next-line no-await-in-loop
+      const signed = await everscaleSignWithWallet(ton.provider, ton.client, encodeSendMetadata);
+      // eslint-disable-next-line no-await-in-loop
+      await everscaleSendMessage(ton.client, signed.message, uploader.abi);
+    }
+    // await Promise.all(
+    //   metadata.map(async (item) => {
+    //     const uncompressed = Buffer.from(JSON.stringify(item)).toString('base64');
+    //     const zstd = await ton.client.utils.compress_zstd({ uncompressed });
+    //     const encodeSendMetadata = {
+    //       abi: uploader.abi,
+    //       address: uploaderAddress,
+    //       call_set: {
+    //         function_name: 'sendMetadata',
+    //         input: {
+    //           adr: rootAddress,
+    //           metadata: Buffer.from(zstd.compressed, 'base64').toString('hex')
+    //         }
+    //       },
+    //       signer: signerExternal(account.public)
+    //     };
+    //     const signed = await everscaleSignWithWallet(ton.provider, ton.client, encodeSendMetadata);
+    //     await everscaleSendMessage(ton.client, signed.message, uploader.abi);
+    //   })
+    // );
     console.debug('[CREATE NFT] - Metadata sent');
 
     // Start selling
@@ -416,6 +456,7 @@ export default function CreateNFT() {
     const signed = await everscaleSignWithWallet(ton.provider, ton.client, encodeStartSelling);
     await everscaleSendMessage(ton.client, signed.message, uploader.abi);
     console.debug('[CREATE NFT] - Selling started');
+    return rootAddress;
   };
 
   if (!account.isReady) {
@@ -582,9 +623,6 @@ export default function CreateNFT() {
           <Typography variant="h6" sx={{ marginTop: 5 }}>
             Layers
           </Typography>
-          <Button onClick={handleModalClose} variant="contained">
-            New Button
-          </Button>
         </Stack>
         {layerData &&
           layerData.map((data) => (
@@ -772,7 +810,7 @@ export default function CreateNFT() {
         handleDelete={currentDeleting === 'card' ? handleImageDelete : handleDeleteLayer}
         currentDeleting={currentDeleting}
       />
-      <DetailModal isOpen={isOpen} handleModalClose={handleModalClose} />
+      <DetailModal handleModalClose={handleModalClose} {...modal} />
     </Page>
   );
 }

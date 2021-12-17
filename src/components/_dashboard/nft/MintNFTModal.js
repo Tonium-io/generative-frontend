@@ -11,10 +11,12 @@ import PropTypes from 'prop-types';
 
 MintNFTModal.propTypes = {
   isOpen: PropTypes.bool,
+  title: PropTypes.string,
+  content: PropTypes.any,
   handleModalClose: PropTypes.func
 };
 
-export default function MintNFTModal({ isOpen, handleModalClose }) {
+export default function MintNFTModal({ isOpen, title, content, handleModalClose }) {
   return (
     <div>
       <Dialog
@@ -23,9 +25,11 @@ export default function MintNFTModal({ isOpen, handleModalClose }) {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">Title</DialogTitle>
+        <DialogTitle id="alert-dialog-title">{title}</DialogTitle>
         <DialogContent>
-          <DialogContentText id="alert-dialog-description">Random Description</DialogContentText>
+          <DialogContentText id="alert-dialog-description" as="div">
+            {content}
+          </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleModalClose}>Close</Button>
