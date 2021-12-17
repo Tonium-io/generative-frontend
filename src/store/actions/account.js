@@ -15,7 +15,8 @@ export const login = async (state, dispatch, isInit) => {
     type: 'SET_ACCOUNT',
     payload: {
       isReady: true,
-      address: accountInteraction.address.toString()
+      address: accountInteraction.address.toString(),
+      public: accountInteraction.publicKey.toString()
     }
   });
 };

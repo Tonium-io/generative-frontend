@@ -25,7 +25,8 @@ import mergeImages from 'merge-images';
 import { styled } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
 // components
-import { signerKeys } from '@tonclient/core';
+import { abiJson, signerKeys, Signer, signerExternal } from '@tonclient/core';
+import { Account } from '@tonclient/appkit';
 import Page from '../components/Page';
 import NFTList from '../components/_dashboard/nft/NFTList';
 import DeleteCardDialog from '../components/_dashboard/nft/DeleteCardDialog';
@@ -38,7 +39,13 @@ import RootTVC from '../assets/contracts/NftRoot.tvc';
 import RootABI from '../assets/contracts/NftRoot.abi.json';
 import IndexTVC from '../assets/contracts/Index.tvc';
 import DataTVC from '../assets/contracts/Data.tvc';
-import { everscaleAccount, everscaleDeployWithWallet, readBinaryFile } from '../utils/helpers';
+import {
+  everscaleAccount,
+  everscaleDeployWithWallet,
+  everscaleSendMessage,
+  everscaleSignWithWallet,
+  readBinaryFile
+} from '../utils/helpers';
 
 // let ipfs;
 // IPFS.create().then(async (node) => {
@@ -313,18 +320,14 @@ export default function CreateNFT() {
    * @return {Promise<void>}
    */
   const uploadBlockchainData = async (metadata) => {
-    const phrase = await ton.client.crypto.mnemonic_from_random({});
-    const keypair = await ton.client.crypto.mnemonic_derive_sign_keys({ phrase: phrase.phrase });
-    const signer = signerKeys(keypair);
-    console.log('Phrase', phrase.phrase);
-    console.log('Keypair', keypair);
-
     // Create and deploy `Uploader` account
     const uploader = await everscaleAccount(UploaderABI, UploaderTVC, {
       client: ton.client,
-      signer
+      signer: signerExternal(account.public)
     });
-    console.log('Uploader address:', await uploader.getAddress());
+    const uploaderAddress = await uploader.getAddress();
+    console.debug('[CREATE NFT] - Uploader address:', uploaderAddress);
+
     await everscaleDeployWithWallet(
       ton.provider,
       {
@@ -336,22 +339,23 @@ export default function CreateNFT() {
     );
 
     // Create and deploy `NFTRoot` account
-    const codeIndex = await ton.client.boc.get_code_from_tvc({
-      tvc: Buffer.from(await readBinaryFile(IndexTVC)).toString('base64')
-    });
-    const codeData = await ton.client.boc.get_code_from_tvc({
-      tvc: Buffer.from(await readBinaryFile(DataTVC)).toString('base64')
-    });
     const root = await everscaleAccount(RootABI, RootTVC, {
       client: ton.client,
-      signer,
+      signer: signerExternal(account.public),
       initData: {
         _addrOwner: await uploader.getAddress(),
         _name: Buffer.from(collectionName).toString('hex')
       }
     });
     const rootAddress = await root.getAddress();
-    console.log('Root address:', rootAddress);
+    console.debug('[CREATE NFT] - Root address:', rootAddress);
+
+    const codeIndex = await ton.client.boc.get_code_from_tvc({
+      tvc: Buffer.from(await readBinaryFile(IndexTVC)).toString('base64')
+    });
+    const codeData = await ton.client.boc.get_code_from_tvc({
+      tvc: Buffer.from(await readBinaryFile(DataTVC)).toString('base64')
+    });
     await everscaleDeployWithWallet(
       ton.provider,
       {
@@ -375,31 +379,37 @@ export default function CreateNFT() {
       metadata.map(async (item) => {
         const uncompressed = Buffer.from(JSON.stringify(item)).toString('base64');
         const zstd = await ton.client.utils.compress_zstd({ uncompressed });
-        await uploader.run('sendMetadata', {
-          adr: rootAddress,
-          metadata: Buffer.from(zstd.compressed, 'base64').toString('hex')
-        });
+        const encodeSendMetadata = {
+          abi: uploader.abi,
+          address: uploaderAddress,
+          call_set: {
+            function_name: 'sendMetadata',
+            input: {
+              adr: rootAddress,
+              metadata: Buffer.from(zstd.compressed, 'base64').toString('hex')
+            }
+          },
+          signer: signerExternal(account.public)
+        };
+        const signed = await everscaleSignWithWallet(ton.provider, ton.client, encodeSendMetadata);
+        await everscaleSendMessage(ton.client, signed.message, uploader.abi);
       })
     );
-    console.debug('Metadata sent');
+    console.debug('[CREATE NFT] - Metadata sent');
 
     // Start selling
-    await uploader.run('startSelling', { adr: rootAddress }, { signer });
-    console.debug('Selling started');
-
-    // Save contracts' data
-    const personal = {
-      uploader: await uploader.getAddress(),
-      root: rootAddress,
-      phrase: phrase.phrase,
-      keys: keypair
+    const encodeStartSelling = {
+      abi: uploader.abi,
+      address: uploaderAddress,
+      call_set: {
+        function_name: 'startSelling',
+        input: { adr: rootAddress }
+      },
+      signer: signerExternal(account.public)
     };
-    const a = document.createElement('a');
-    const file = new Blob([JSON.stringify(personal)], { type: 'application/json' });
-    a.href = URL.createObjectURL(file);
-    a.download = 'contracts.json';
-    a.click();
-    a.remove();
+    const signed = await everscaleSignWithWallet(ton.provider, ton.client, encodeStartSelling);
+    await everscaleSendMessage(ton.client, signed.message, uploader.abi);
+    console.debug('[CREATE NFT] - Selling started');
   };
 
   if (!account.isReady) {
