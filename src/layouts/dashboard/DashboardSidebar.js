@@ -100,7 +100,10 @@ export default function DashboardSidebar({ isOpenSidebar, onCloseSidebar }) {
                   sx={{ color: 'text.primary' }}
                   title={account.address}
                 >
-                  {account.address}
+                  {`${account.address.substr(0, 7)} ... ${account.address.substr(
+                    account.address.length - 7,
+                    account.address.length
+                  )}`}
                 </Typography>
                 {/* <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                   {account.role}
