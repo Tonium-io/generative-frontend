@@ -76,8 +76,8 @@ export default function CreateNFT() {
   const [collectionDesc, setCollectionDesc] = useState('');
   const [isSubmitClick, setIsSubmitClick] = useState(false);
   const [layerData, setLayerData] = useState([]);
-  const [totalImages, setTotalImages] = useState(10);
-  const [nftPrice, setNftPrice] = useState(100);
+  const [totalImages, setTotalImages] = useState(4);
+  const [nftPrice, setNftPrice] = useState(1);
   const [nftPriceCoeff, setNftPriceCoeff] = useState(1);
   const [nftData, setNftData] = useState([]);
   const [currentLayer, setCurrentLayer] = useState();
@@ -385,7 +385,7 @@ export default function CreateNFT() {
       ton.provider,
       {
         sender: account.address,
-        amount: (100 * 10 ** 9).toString(),
+        amount: (10 * 10 ** 9).toString(),
         bounce: false
       },
       root,

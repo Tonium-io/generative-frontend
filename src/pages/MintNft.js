@@ -13,6 +13,7 @@ import { useContext, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { signerExternal } from '@tonclient/core';
 import CopyToClipboard from 'react-copy-to-clipboard';
+import { AccountType } from '@tonclient/appkit';
 import Page from '../components/Page';
 import StoreContext from '../store/StoreContext';
 import UploaderABI from '../assets/contracts/UploadDeGenerative.abi.json';
@@ -29,19 +30,42 @@ const MintNft = () => {
   } = useContext(StoreContext);
   const [modal, setModal] = useState({ isOpen: false, title: undefined, content: undefined });
 
-  const getMetadata = async (address) => {
+  const getRootData = async (address) => {
     const root = await everscaleAccount(RootABI, undefined, { address, client: ton.client });
+    await root.refresh();
     const acc = await root.getAccount();
-    const rootData = await root.client.abi.decode_account_data({ abi: root.abi, data: acc.data });
-    console.log(rootData);
+    const result = await root.client.abi.decode_account_data({
+      abi: root.abi,
+      data: acc.data
+    });
+    return result.data;
+  };
 
+  const getMetadata = async (address, rootData) => {
+    const root = await everscaleAccount(RootABI, undefined, { address, client: ton.client });
     const resolvedData = await root.runLocal('resolveData', {
       addrRoot: await root.getAddress(),
-      id: +rootData.data._totalMinted - 1,
-      name: rootData.data._name
+      id: +rootData._totalMinted - 1,
+      name: rootData._name
     });
 
     const dataAddress = resolvedData.decoded.output.addrData;
+    await new Promise((resolve) => {
+      const interval = setInterval(async () => {
+        const result = await ton.client.net.query_collection({
+          collection: 'accounts',
+          filter: { id: { eq: dataAddress } },
+          result: 'acc_type'
+        });
+
+        console.debug('[MINT NFT] - Wait for data account', result.result);
+        if (result.result.length && result.result[0].acc_type === AccountType.active) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 3000);
+    });
+
     const dataAccount = await everscaleAccount(DataABI, undefined, {
       address: dataAddress,
       client: ton.client
@@ -87,6 +111,13 @@ const MintNft = () => {
       signer: signerExternal(account.public)
     });
 
+    // Get root data before minting
+    let rootData = await getRootData(values.root);
+    if (!rootData.preGenerateMetadata.length) {
+      alert('All tokens are minted :(');
+      return;
+    }
+
     // Run contract `mintByAdmin` method
     const encodeMintByAdmin = {
       abi: uploader.abi,
@@ -99,10 +130,24 @@ const MintNft = () => {
     };
     const signed = await everscaleSignWithWallet(ton.provider, ton.client, encodeMintByAdmin);
     await everscaleSendMessage(ton.client, signed.message, uploader.abi);
+
+    // Wait for minting completed
+    // TODO: Do it in more pretty way
+    await new Promise((resolve) => {
+      const interval = setInterval(async () => {
+        const _data = await getRootData(values.root);
+        console.debug('[MINT NFT] - Check root', _data._totalMinted, rootData._totalMinted);
+        if (+_data._totalMinted > +rootData._totalMinted) {
+          rootData = _data;
+          clearInterval(interval);
+          resolve();
+        }
+      }, 3000);
+    });
     console.debug('[MINT NFT] - Minted');
 
     // Get minted token metadata
-    await getMetadata(values.root);
+    await getMetadata(values.root, rootData);
     formikHelpers.resetForm({});
   };
 
@@ -113,6 +158,14 @@ const MintNft = () => {
    * @return {Promise<void>}
    */
   const onMintHandler = async (values, formikHelpers) => {
+    // Get root data before minting
+    let rootData = await getRootData(values.root);
+    if (!rootData.preGenerateMetadata.length) {
+      alert('All tokens are minted :(');
+      return;
+    }
+
+    // Mint token
     await ton.provider.sendMessage({
       sender: account.address,
       recipient: values.root,
@@ -124,10 +177,24 @@ const MintNft = () => {
         params: {}
       }
     });
+
+    // Wait for minting completed
+    // TODO: Do it in more pretty way
+    await new Promise((resolve) => {
+      const interval = setInterval(async () => {
+        const _data = await getRootData(values.root);
+        console.debug('[MINT NFT] - Check root', _data._totalMinted, rootData._totalMinted);
+        if (+_data._totalMinted > +rootData._totalMinted) {
+          rootData = _data;
+          clearInterval(interval);
+          resolve();
+        }
+      }, 3000);
+    });
     console.debug('[MINT NFT] - Minted');
 
     // Get minted token metadata
-    await getMetadata(values.root);
+    await getMetadata(values.root, rootData);
     formikHelpers.resetForm({});
   };
 
@@ -205,7 +272,7 @@ const MintNft = () => {
             <Formik
               initialValues={{
                 root: '',
-                price: 0
+                price: 2
               }}
               validationSchema={Yup.object().shape({
                 root: Yup.string().required(),

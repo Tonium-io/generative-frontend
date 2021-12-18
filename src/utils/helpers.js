@@ -76,9 +76,10 @@ export const everscaleSignWithWallet = async (provider, client, paramsOfEncode) 
  * @param client
  * @param message
  * @param abi
+ * @param wait
  * @return {Promise<void>}
  */
-export const everscaleSendMessage = async (client, message, abi = undefined) => {
+export const everscaleSendMessage = async (client, message, abi = undefined, wait = true) => {
   // Send message to the network
   const sendResult = await client.processing.send_message({
     message,
@@ -88,13 +89,15 @@ export const everscaleSendMessage = async (client, message, abi = undefined) => 
   console.debug('[EVERSCALE] - Send message result', sendResult);
 
   // Wait for transaction
-  const waitResult = await client.processing.wait_for_transaction({
-    abi,
-    message,
-    shard_block_id: sendResult.shard_block_id,
-    send_events: false
-  });
-  console.debug('[EVERSCALE] - Wait for transaction result', waitResult);
+  if (wait) {
+    const waitResult = await client.processing.wait_for_transaction({
+      abi,
+      message,
+      shard_block_id: sendResult.shard_block_id,
+      send_events: false
+    });
+    console.debug('[EVERSCALE] - Wait for transaction result', waitResult);
+  }
 };
 
 /**
