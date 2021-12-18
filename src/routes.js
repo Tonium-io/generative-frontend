@@ -10,6 +10,7 @@ import CreateNft from './pages/CreateNft';
 // import User from './pages/User';
 import NotFound from './pages/Page404';
 import Login from './pages/Login';
+import MintNft from './pages/MintNft';
 
 // ----------------------------------------------------------------------
 
@@ -24,6 +25,7 @@ export default function Router() {
         { path: 'nfts', element: <Nfts /> },
         { path: 'mynfts', element: <Nfts /> },
         { path: 'create', element: <CreateNft /> },
+        { path: 'mint', element: <MintNft /> },
         // { path: 'blog', element: <Blog /> },
         { path: 'login', element: <Login /> }
       ]

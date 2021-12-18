@@ -6,6 +6,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 
 //
+import { libWeb } from '@tonclient/lib-web';
+import { TonClient } from '@tonclient/core';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 import reportWebVitals from './reportWebVitals';
@@ -28,3 +30,6 @@ serviceWorker.unregister();
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
+
+// eslint-disable-next-line react-hooks/rules-of-hooks
+TonClient.useBinaryLibrary(libWeb);

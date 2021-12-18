@@ -5,6 +5,7 @@ import pieChart2Fill from '@iconify/icons-eva/pie-chart-2-fill';
 import imageFill from '@iconify/icons-eva/image-2-fill';
 import colorFill from '@iconify/icons-eva/color-palette-fill';
 import buldFill from '@iconify/icons-eva/bulb-fill';
+import starFill from '@iconify/icons-eva/star-fill';
 
 // ----------------------------------------------------------------------
 
@@ -35,6 +36,11 @@ const sidebarConfig = [
     title: 'My NFTs (soon)',
     path: '/dashboard/mynfts',
     icon: getIcon(colorFill)
+  },
+  {
+    title: 'Mint NFT',
+    path: '/dashboard/mint',
+    icon: getIcon(starFill)
   }
   // {
   //   title: 'blog',

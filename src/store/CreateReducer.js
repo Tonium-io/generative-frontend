@@ -1,6 +1,7 @@
 import { ProviderRpcClient } from 'ton-inpage-provider';
 import { useReducer, useEffect } from 'react';
 
+import { TonClient } from '@tonclient/core';
 import reducer from './reducer';
 import { login } from './actions/account';
 
@@ -22,13 +23,19 @@ const InitTon = async (dispatch) => {
   const ton = new ProviderRpcClient();
 
   await ton.ensureInitialized();
-  dispatch({ type: 'TON_READY', provider: ton });
+  const client = new TonClient({
+    network: {
+      endpoints: ['http://localhost']
+    }
+  });
+  dispatch({ type: 'TON_READY', provider: ton, client });
 };
 
 const CreateReducer = () => {
   const [state, dispatch] = useReducer(reducer, {
     ton: {
       provider: null,
+      client: null,
       isReady: false
     },
     account: {
