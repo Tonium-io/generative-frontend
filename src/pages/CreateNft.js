@@ -393,7 +393,7 @@ export default function CreateNFT() {
         initInput: {
           codeIndex: codeIndex.code,
           codeData: codeData.code,
-          pay: nftPrice,
+          pay: nftPrice * 10 ** 9,
           koef: nftPriceCoeff
         }
       }
