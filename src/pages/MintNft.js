@@ -272,7 +272,7 @@ const MintNft = () => {
             <Formik
               initialValues={{
                 root: '',
-                price: 2
+                price: ''
               }}
               validationSchema={Yup.object().shape({
                 root: Yup.string().required(),
@@ -280,7 +280,7 @@ const MintNft = () => {
               })}
               onSubmit={onMintHandler}
             >
-              {({ errors, touched, isSubmitting }) => (
+              {({ errors, touched, isSubmitting, setFieldValue }) => (
                 <Form>
                   <Field name="root">
                     {({ field, form }) => (
@@ -291,6 +291,14 @@ const MintNft = () => {
                         error={form.touched.root && Boolean(form.errors.root)}
                         {...field}
                         sx={{ mt: 2, mb: 2 }}
+                        onChange={async (e) => {
+                          const address = e.target.value;
+                          setFieldValue('root', address, true);
+                          if (address) {
+                            const data = await getRootData(address);
+                            setFieldValue('price', +data.price / 10 ** 9 + 2, true);
+                          }
+                        }}
                       />
                     )}
                   </Field>
@@ -301,12 +309,13 @@ const MintNft = () => {
                   <Field name="price">
                     {({ field, form }) => (
                       <TextField
-                        label="Token price"
+                        label="Token price (+2 commission)"
                         fullWidth
                         autoComplete="off"
                         error={form.touched.price && Boolean(form.errors.price)}
                         {...field}
                         sx={{ mb: 2 }}
+                        disabled
                       />
                     )}
                   </Field>

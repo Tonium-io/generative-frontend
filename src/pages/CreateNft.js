@@ -78,7 +78,7 @@ export default function CreateNFT() {
   const [layerData, setLayerData] = useState([]);
   const [totalImages, setTotalImages] = useState(4);
   const [nftPrice, setNftPrice] = useState(1);
-  const [nftPriceCoeff, setNftPriceCoeff] = useState(1);
+  const [nftPriceCoeff, setNftPriceCoeff] = useState(100);
   const [nftData, setNftData] = useState([]);
   const [currentLayer, setCurrentLayer] = useState();
   const [currentDeletedIndex, setCurrentDeletedIndex] = useState();
