@@ -1,9 +1,9 @@
 import { ProviderRpcClient } from 'ton-inpage-provider';
 import { useReducer, useEffect } from 'react';
 
-import { TonClient } from '@tonclient/core';
 import reducer from './reducer';
 import { login } from './actions/account';
+import { everscaleClient } from '../utils/helpers';
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -21,14 +21,17 @@ const InitTon = async (dispatch) => {
     }
   }
   const ton = new ProviderRpcClient();
-
+  const providerState = await ton.getProviderState();
   await ton.ensureInitialized();
-  const client = new TonClient({
-    network: {
-      endpoints: ['http://localhost']
+
+  dispatch({
+    type: 'SET_TON',
+    payload: {
+      isReady: true,
+      provider: ton,
+      client: everscaleClient(providerState.selectedConnection)
     }
   });
-  dispatch({ type: 'TON_READY', provider: ton, client });
 };
 
 const CreateReducer = () => {
@@ -41,12 +44,22 @@ const CreateReducer = () => {
     account: {
       isReady: false,
       address: null,
+      public: null,
       balance: null, // maybe in future we can use ton.getBalance().
       ava: null // maybe.
     }
   });
   useEffect(() => {
-    InitTon(dispatch);
+    InitTon(dispatch).then();
+
+    window.ton.on('networkChanged', (data) => {
+      dispatch({
+        type: 'SET_TON',
+        payload: {
+          client: everscaleClient(data.selectedConnection)
+        }
+      });
+    });
   }, []);
 
   useEffect(() => {
