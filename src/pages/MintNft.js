@@ -345,9 +345,6 @@ const MintNft = () => {
             </Formik>
           </Grid>
         </Grid>
-        <Button onClick={handleModalClose} variant="contained" sx={{ mt: 2 }}>
-          New Button
-        </Button>
       </Container>
       <MintNFTModal handleModalClose={handleModalClose} {...modal} />
     </Page>
