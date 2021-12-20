@@ -623,6 +623,9 @@ export default function CreateNFT() {
           <Typography variant="h6" sx={{ marginTop: 5 }}>
             Layers
           </Typography>
+          <Button onClick={handleModalClose} variant="contained">
+            New Button
+          </Button>
         </Stack>
         {layerData &&
           layerData.map((data) => (
