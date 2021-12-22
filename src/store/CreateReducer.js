@@ -52,14 +52,16 @@ const CreateReducer = () => {
   useEffect(() => {
     InitTon(dispatch).then();
 
-    window.ton.on('networkChanged', (data) => {
-      dispatch({
-        type: 'SET_TON',
-        payload: {
-          client: everscaleClient(data.selectedConnection)
-        }
+    if (window.ton) {
+      window.ton.on('networkChanged', (data) => {
+        dispatch({
+          type: 'SET_TON',
+          payload: {
+            client: everscaleClient(data.selectedConnection)
+          }
+        });
       });
-    });
+    }
   }, []);
 
   useEffect(() => {
