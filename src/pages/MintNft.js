@@ -248,7 +248,9 @@ const MintNft = () => {
                     )}
                   </Field>
                   {touched.root && errors.root && (
-                    <FormHelperText error>{errors.root}</FormHelperText>
+                    <FormHelperText sx={{ mt: -1, mb: 2 }} error>
+                      {errors.root}
+                    </FormHelperText>
                   )}
 
                   <div>
@@ -303,7 +305,9 @@ const MintNft = () => {
                     )}
                   </Field>
                   {touched.root && errors.root && (
-                    <FormHelperText error>{errors.root}</FormHelperText>
+                    <FormHelperText sx={{ mt: -1, mb: 2 }} error>
+                      {errors.root}
+                    </FormHelperText>
                   )}
 
                   <Field name="price">
@@ -320,7 +324,9 @@ const MintNft = () => {
                     )}
                   </Field>
                   {touched.price && errors.price && (
-                    <FormHelperText error>{errors.price}</FormHelperText>
+                    <FormHelperText sx={{ mt: -1, mb: 2 }} error>
+                      {errors.price}
+                    </FormHelperText>
                   )}
 
                   <div>
