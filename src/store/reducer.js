@@ -2,10 +2,10 @@ const reducer = (state, action) => {
   switch (action.type) {
     case 'SET_ACCOUNT':
       return { ...state, account: { ...state.account, ...action.payload } };
-    case 'TON_READY':
+    case 'SET_TON':
       return {
         ...state,
-        ton: { ...state.ton, isReady: true, provider: action.provider, client: action.client }
+        ton: { ...state.ton, ...action.payload }
       };
     default:
       throw new Error();

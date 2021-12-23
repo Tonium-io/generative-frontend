@@ -24,8 +24,10 @@ import { useDropzone } from 'react-dropzone';
 import mergeImages from 'merge-images';
 import { styled } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
+import QRCode from 'qrcode.react';
+import CopyToClipboard from 'react-copy-to-clipboard';
 // components
-import { signerKeys } from '@tonclient/core';
+import { signerExternal } from '@tonclient/core';
 import Page from '../components/Page';
 import NFTList from '../components/_dashboard/nft/NFTList';
 import DeleteCardDialog from '../components/_dashboard/nft/DeleteCardDialog';
@@ -39,7 +41,13 @@ import RootTVC from '../assets/contracts/NftRoot.tvc';
 import RootABI from '../assets/contracts/NftRoot.abi.json';
 import IndexTVC from '../assets/contracts/Index.tvc';
 import DataTVC from '../assets/contracts/Data.tvc';
-import { everscaleAccount, everscaleDeployWithWallet, readBinaryFile } from '../utils/helpers';
+import {
+  everscaleAccount,
+  everscaleDeployWithWallet,
+  everscaleSendMessage,
+  everscaleSignWithWallet,
+  readBinaryFile
+} from '../utils/helpers';
 
 // let ipfs;
 // IPFS.create().then(async (node) => {
@@ -68,14 +76,14 @@ export default function CreateNFT() {
   const [collectionDesc, setCollectionDesc] = useState('');
   const [isSubmitClick, setIsSubmitClick] = useState(false);
   const [layerData, setLayerData] = useState([]);
-  const [totalImages, setTotalImages] = useState(10);
-  const [nftPrice, setNftPrice] = useState(100);
-  const [nftPriceCoeff, setNftPriceCoeff] = useState(1);
+  const [totalImages, setTotalImages] = useState(4);
+  const [nftPrice, setNftPrice] = useState(1);
+  const [nftPriceCoeff, setNftPriceCoeff] = useState(100);
   const [nftData, setNftData] = useState([]);
   const [currentLayer, setCurrentLayer] = useState();
   const [currentDeletedIndex, setCurrentDeletedIndex] = useState();
   const [open, setOpen] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
+  const [modal, setModal] = useState({ isOpen: false, title: undefined, content: undefined });
   const [currentDeleting, setCurrentDeleting] = useState('');
   const [isSpinner, setIsSpinner] = useState(false);
   const {
@@ -143,8 +151,26 @@ export default function CreateNFT() {
       });
     }
 
-    await uploadBlockchainData(returnData);
+    const rootAddress = await uploadBlockchainData(returnData);
     setIsSpinner(false);
+    setModal({
+      isOpen: true,
+      title: 'Deploy NFTs',
+      content: (
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={4}>
+            <QRCode value={rootAddress} />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <h3>Root address for minting</h3>
+            <CopyToClipboard text={rootAddress} onCopy={() => alert('Copied')}>
+              <div style={{ wordBreak: 'break-all', cursor: 'pointer' }}>{rootAddress}</div>
+            </CopyToClipboard>
+          </Grid>
+        </Grid>
+      )
+    });
+
     // const a = document.createElement('a');
     // const file = new Blob([JSON.stringify(returnData)], { type: 'application/json' });
     // a.href = URL.createObjectURL(file);
@@ -261,9 +287,11 @@ export default function CreateNFT() {
   };
 
   const handleTraitNameChange = (val, currentId) => {
-    const newArr = layerData.filter((elem) =>
-      elem.id === currentId ? (elem.traitName = val) : elem
-    );
+    const findArr = layerData.find((elem) => elem.id === currentId);
+
+    findArr.traitName = val;
+
+    const newArr = layerData.filter((elem) => (elem.id === currentId ? findArr : elem));
     setLayerData(newArr);
   };
 
@@ -299,7 +327,7 @@ export default function CreateNFT() {
   };
 
   const handleModalClose = () => {
-    setIsOpen(!isOpen);
+    setModal({ isOpen: !modal.isOpen, title: undefined, content: undefined });
   };
 
   const handleImageDelete = () => {
@@ -319,18 +347,14 @@ export default function CreateNFT() {
    * @return {Promise<void>}
    */
   const uploadBlockchainData = async (metadata) => {
-    const phrase = await ton.client.crypto.mnemonic_from_random({});
-    const keypair = await ton.client.crypto.mnemonic_derive_sign_keys({ phrase: phrase.phrase });
-    const signer = signerKeys(keypair);
-    console.log('Phrase', phrase.phrase);
-    console.log('Keypair', keypair);
-
     // Create and deploy `Uploader` account
     const uploader = await everscaleAccount(UploaderABI, UploaderTVC, {
       client: ton.client,
-      signer
+      signer: signerExternal(account.public)
     });
-    console.log('Uploader address:', await uploader.getAddress());
+    const uploaderAddress = await uploader.getAddress();
+    console.debug('[CREATE NFT] - Uploader address:', uploaderAddress);
+
     await everscaleDeployWithWallet(
       ton.provider,
       {
@@ -342,27 +366,28 @@ export default function CreateNFT() {
     );
 
     // Create and deploy `NFTRoot` account
-    const codeIndex = await ton.client.boc.get_code_from_tvc({
-      tvc: Buffer.from(await readBinaryFile(IndexTVC)).toString('base64')
-    });
-    const codeData = await ton.client.boc.get_code_from_tvc({
-      tvc: Buffer.from(await readBinaryFile(DataTVC)).toString('base64')
-    });
     const root = await everscaleAccount(RootABI, RootTVC, {
       client: ton.client,
-      signer,
+      signer: signerExternal(account.public),
       initData: {
         _addrOwner: await uploader.getAddress(),
         _name: Buffer.from(collectionName).toString('hex')
       }
     });
     const rootAddress = await root.getAddress();
-    console.log('Root address:', rootAddress);
+    console.debug('[CREATE NFT] - Root address:', rootAddress);
+
+    const codeIndex = await ton.client.boc.get_code_from_tvc({
+      tvc: Buffer.from(await readBinaryFile(IndexTVC)).toString('base64')
+    });
+    const codeData = await ton.client.boc.get_code_from_tvc({
+      tvc: Buffer.from(await readBinaryFile(DataTVC)).toString('base64')
+    });
     await everscaleDeployWithWallet(
       ton.provider,
       {
         sender: account.address,
-        amount: (100 * 10 ** 9).toString(),
+        amount: (10 * 10 ** 9).toString(),
         bounce: false
       },
       root,
@@ -370,42 +395,70 @@ export default function CreateNFT() {
         initInput: {
           codeIndex: codeIndex.code,
           codeData: codeData.code,
-          pay: nftPrice,
+          pay: nftPrice * 10 ** 9,
           koef: nftPriceCoeff
         }
       }
     );
 
     // Upload metadata
-    await Promise.all(
-      metadata.map(async (item) => {
-        const uncompressed = Buffer.from(JSON.stringify(item)).toString('base64');
-        const zstd = await ton.client.utils.compress_zstd({ uncompressed });
-        await uploader.run('sendMetadata', {
-          adr: rootAddress,
-          metadata: Buffer.from(zstd.compressed, 'base64').toString('hex')
-        });
-      })
-    );
-    console.debug('Metadata sent');
+    for (const item of metadata) {
+      const uncompressed = Buffer.from(JSON.stringify(item)).toString('base64');
+      // eslint-disable-next-line no-await-in-loop
+      const zstd = await ton.client.utils.compress_zstd({ uncompressed });
+      const encodeSendMetadata = {
+        abi: uploader.abi,
+        address: uploaderAddress,
+        call_set: {
+          function_name: 'sendMetadata',
+          input: {
+            adr: rootAddress,
+            metadata: Buffer.from(zstd.compressed, 'base64').toString('hex')
+          }
+        },
+        signer: signerExternal(account.public)
+      };
+      // eslint-disable-next-line no-await-in-loop
+      const signed = await everscaleSignWithWallet(ton.provider, ton.client, encodeSendMetadata);
+      // eslint-disable-next-line no-await-in-loop
+      await everscaleSendMessage(ton.client, signed.message, uploader.abi);
+    }
+    // await Promise.all(
+    //   metadata.map(async (item) => {
+    //     const uncompressed = Buffer.from(JSON.stringify(item)).toString('base64');
+    //     const zstd = await ton.client.utils.compress_zstd({ uncompressed });
+    //     const encodeSendMetadata = {
+    //       abi: uploader.abi,
+    //       address: uploaderAddress,
+    //       call_set: {
+    //         function_name: 'sendMetadata',
+    //         input: {
+    //           adr: rootAddress,
+    //           metadata: Buffer.from(zstd.compressed, 'base64').toString('hex')
+    //         }
+    //       },
+    //       signer: signerExternal(account.public)
+    //     };
+    //     const signed = await everscaleSignWithWallet(ton.provider, ton.client, encodeSendMetadata);
+    //     await everscaleSendMessage(ton.client, signed.message, uploader.abi);
+    //   })
+    // );
+    console.debug('[CREATE NFT] - Metadata sent');
 
     // Start selling
-    await uploader.run('startSelling', { adr: rootAddress }, { signer });
-    console.debug('Selling started');
-
-    // Save contracts' data
-    const personal = {
-      uploader: await uploader.getAddress(),
-      root: rootAddress,
-      phrase: phrase.phrase,
-      keys: keypair
+    const encodeStartSelling = {
+      abi: uploader.abi,
+      address: uploaderAddress,
+      call_set: {
+        function_name: 'startSelling',
+        input: { adr: rootAddress }
+      },
+      signer: signerExternal(account.public)
     };
-    const a = document.createElement('a');
-    const file = new Blob([JSON.stringify(personal)], { type: 'application/json' });
-    a.href = URL.createObjectURL(file);
-    a.download = 'contracts.json';
-    a.click();
-    a.remove();
+    const signed = await everscaleSignWithWallet(ton.provider, ton.client, encodeStartSelling);
+    await everscaleSendMessage(ton.client, signed.message, uploader.abi);
+    console.debug('[CREATE NFT] - Selling started');
+    return rootAddress;
   };
 
   if (!account.isReady) {
@@ -572,9 +625,6 @@ export default function CreateNFT() {
           <Typography variant="h6" sx={{ marginTop: 5 }}>
             Layers
           </Typography>
-          <Button onClick={handleModalClose} variant="contained">
-            New Button
-          </Button>
         </Stack>
         {layerData &&
           layerData.map((data) => (
@@ -762,7 +812,7 @@ export default function CreateNFT() {
         handleDelete={currentDeleting === 'card' ? handleImageDelete : handleDeleteLayer}
         currentDeleting={currentDeleting}
       />
-      <DetailModal isOpen={isOpen} handleModalClose={handleModalClose} />
+      <DetailModal handleModalClose={handleModalClose} {...modal} />
     </Page>
   );
 }
