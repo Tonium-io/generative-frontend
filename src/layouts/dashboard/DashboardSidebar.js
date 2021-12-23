@@ -94,13 +94,13 @@ export default function DashboardSidebar({ isOpenSidebar, onCloseSidebar }) {
           <Link underline="none" component={RouterLink} to="#">
             <AccountStyle>
               <Avatar src={account.photoURL} alt="photoURL" />
-              <Box style={{ marginLeft: 18 }}>
+              <Box style={{ marginLeft: 20 }}>
                 <Typography
                   variant="subtitle2"
                   sx={{ color: 'text.primary' }}
                   title={account.address}
                 >
-                  {`${account.address.substr(0, 8)} ... ${account.address.substr(
+                  {`${account.address.substr(0, 7)} ... ${account.address.substr(
                     account.address.length - 7,
                     account.address.length
                   )}`}
