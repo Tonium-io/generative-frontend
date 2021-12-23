@@ -287,9 +287,11 @@ export default function CreateNFT() {
   };
 
   const handleTraitNameChange = (val, currentId) => {
-    const newArr = layerData.filter((elem) =>
-      elem.id === currentId ? (elem.traitName = val) : elem
-    );
+    const findArr = layerData.find((elem) => elem.id === currentId);
+
+    findArr.traitName = val;
+
+    const newArr = layerData.filter((elem) => (elem.id === currentId ? findArr : elem));
     setLayerData(newArr);
   };
 
