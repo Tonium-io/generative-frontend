@@ -26,6 +26,7 @@ import { styled } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
 import QRCode from 'qrcode.react';
 import CopyToClipboard from 'react-copy-to-clipboard';
+import InfoIcon from '@mui/icons-material/Info';
 // components
 import { signerExternal } from '@tonclient/core';
 import Page from '../components/Page';
@@ -33,6 +34,7 @@ import NFTList from '../components/_dashboard/nft/NFTList';
 import DeleteCardDialog from '../components/_dashboard/nft/DeleteCardDialog';
 import DetailModal from '../components/_dashboard/nft/DetailModal';
 import { validateForm } from '../components/_dashboard/nft/validateForm';
+import DetailPopover from '../components/_dashboard/nft/DetailPopover';
 
 import StoreContext from '../store/StoreContext';
 import UploaderTVC from '../assets/contracts/UploadDeGenerative.tvc';
@@ -76,7 +78,11 @@ export default function CreateNFT() {
   const [collectionDesc, setCollectionDesc] = useState('');
   const [isSubmitClick, setIsSubmitClick] = useState(false);
   const [layerData, setLayerData] = useState([]);
-  const [totalImages, setTotalImages] = useState(4);
+  const [totalImages, setTotalImages] = useState(10);
+  const [royalty, setRoyalty] = useState(0);
+  const [isRoyalityError, setIsRoyalityError] = useState(false);
+  const [isRoalityDetailOpen, setIsRoalityDetailOpen] = useState(false);
+  const [isPriceCoffOpen, setIsPriceCoffOpen] = useState(false);
   const [nftPrice, setNftPrice] = useState(1);
   const [nftPriceCoeff, setNftPriceCoeff] = useState(100);
   const [nftData, setNftData] = useState([]);
@@ -147,7 +153,8 @@ export default function CreateNFT() {
         description: data.description,
         traits: data.traits,
         price: nftPrice,
-        image: `ipfs://${uploadedData[key]}`
+        image: `ipfs://${uploadedData[key]}`,
+        royalty
       });
     }
 
@@ -517,10 +524,10 @@ export default function CreateNFT() {
               Generation a lot of images (1000+) can be slow (10+ seconds). Future optimization is
               needed
             </li>
-            <li>
+            {/* <li>
               Blockchain integration is not available on web, please use TON CLI to deploy prepared
               data. Also will be implemented in future
-            </li>
+            </li> */}
             <li>Some pages on development stage now</li>
             <li>Product contains bugs. Please forgive us</li>
           </ul>
@@ -529,7 +536,7 @@ export default function CreateNFT() {
 
       <Container>
         <Grid container spacing={2}>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={8}>
             <TextField
               label="Collection Name"
               value={collectionName}
@@ -566,27 +573,7 @@ export default function CreateNFT() {
               ''
             )}
           </Grid>
-          <Grid item xs={12} md={4}>
-            <TextField
-              label="NFT price (in TON)"
-              type="number"
-              value={nftPrice}
-              onChange={(e) => {
-                const number = e.target.value;
-                if (number >= 0) {
-                  setNftPrice(number);
-                }
-              }}
-              error={isSubmitClick && !nftPrice}
-              fullWidth
-            />
-            {isSubmitClick && !nftPrice ? (
-              <FormHelperText error>Please Enter price of NFTs greater than 0</FormHelperText>
-            ) : (
-              ''
-            )}
-          </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={4} style={{ position: 'relative' }}>
             <TextField
               label="NFT price coefficient"
               type="number"
@@ -600,8 +587,82 @@ export default function CreateNFT() {
               error={isSubmitClick && !nftPriceCoeff}
               fullWidth
             />
+            <DetailPopover
+              open={isPriceCoffOpen}
+              handleClose={() => setIsPriceCoffOpen(!isPriceCoffOpen)}
+              type="price"
+              title="The coefficient of the cost increase of each subsequent NFT. The default value of 100 means the same cost. For example, 120 means a 20% price increase for each next token"
+            />
+            <InfoIcon
+              style={{ position: 'absolute', top: 32, right: 8, color: '#00AB55' }}
+              onClick={() => setIsPriceCoffOpen(!isPriceCoffOpen)}
+            />
             {isSubmitClick && !nftPriceCoeff ? (
               <FormHelperText error>Please Enter price coefficient greater than 0</FormHelperText>
+            ) : (
+              ''
+            )}
+          </Grid>
+          <Grid item xs={12} md={4} style={{ position: 'relative' }}>
+            <TextField
+              label="Royalty (in %)"
+              // type="number"
+              inputProps={{ inputMode: 'decimal' }}
+              value={royalty}
+              step={0.5}
+              onChange={(e) => {
+                const number = e.target.value;
+                // console.log('number', number.toString().split('.')[1].split(''));
+                if (number >= 0 && number <= 50) {
+                  setRoyalty(number);
+                  setIsRoyalityError(false);
+                  if (
+                    number.toString().split('.')[1] &&
+                    number.toString().split('.')[1].split('').length > 1
+                  ) {
+                    setIsRoyalityError(true);
+                  }
+                } else {
+                  setIsRoyalityError(true);
+                }
+              }}
+              error={isSubmitClick && !nftPrice}
+              fullWidth
+            />
+            <DetailPopover
+              open={isRoalityDetailOpen}
+              handleClose={() => setIsRoalityDetailOpen(!isRoalityDetailOpen)}
+              type="royalty"
+              title="Creator's lifetime fee. Suggested: 0%, 2.5%, 10%, 25%. Maximum is 50%. Royalty is the amount you receive for each sale of your artwork on the secondary market."
+            />
+            <InfoIcon
+              style={{ position: 'absolute', top: 32, right: 8, color: '#00AB55' }}
+              onClick={() => setIsRoalityDetailOpen(!isRoalityDetailOpen)}
+            />
+            {isRoyalityError || (isSubmitClick && !royalty) ? (
+              <FormHelperText error>
+                Please Enter royalty upto 50% with max 1 decimal value.
+              </FormHelperText>
+            ) : (
+              ''
+            )}
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <TextField
+              label="NFT price (in EVERs)"
+              type="number"
+              value={nftPrice}
+              onChange={(e) => {
+                const number = e.target.value;
+                if (number >= 0) {
+                  setNftPrice(number);
+                }
+              }}
+              error={isSubmitClick && !nftPrice}
+              fullWidth
+            />
+            {isSubmitClick && !nftPrice ? (
+              <FormHelperText error>Please Enter price of NFTs greater than 0</FormHelperText>
             ) : (
               ''
             )}
