@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-syntax */
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, useRef } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { create } from 'ipfs-http-client';
 
@@ -18,7 +18,8 @@ import {
   Grid,
   FormHelperText,
   Backdrop,
-  CircularProgress
+  CircularProgress,
+  IconButton
 } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
 import mergeImages from 'merge-images';
@@ -27,6 +28,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import QRCode from 'qrcode.react';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import InfoIcon from '@mui/icons-material/Info';
+import CloseIcon from '@mui/icons-material/Close';
 // components
 import { signerExternal } from '@tonclient/core';
 import Page from '../components/Page';
@@ -35,6 +37,8 @@ import DeleteCardDialog from '../components/_dashboard/nft/DeleteCardDialog';
 import DetailModal from '../components/_dashboard/nft/DetailModal';
 import { validateForm } from '../components/_dashboard/nft/validateForm';
 import DetailPopover from '../components/_dashboard/nft/DetailPopover';
+import CloseStopProcess from '../components/_dashboard/nft/CloseStopProcess';
+import useKeyPress from '../components/useKeyPress';
 
 import StoreContext from '../store/StoreContext';
 import UploaderTVC from '../assets/contracts/UploadDeGenerative.tvc';
@@ -92,9 +96,14 @@ export default function CreateNFT() {
   const [modal, setModal] = useState({ isOpen: false, title: undefined, content: undefined });
   const [currentDeleting, setCurrentDeleting] = useState('');
   const [isSpinner, setIsSpinner] = useState(false);
+  const [isStopModal, setIsStopModal] = useState(false);
+  const [isDataUploading, setIsDataUploading] = useState(false);
   const {
     state: { account, ton }
   } = useContext(StoreContext);
+
+  const generateImageRef = useRef(null);
+  const layerRef = useRef(null);
 
   const { getRootProps, getInputProps, acceptedFiles, isDragActive } = useDropzone();
 
@@ -139,6 +148,7 @@ export default function CreateNFT() {
 
   const getDataForBlockchain = async () => {
     setIsSpinner(true);
+    setIsDataUploading(true);
     const uploadArrayPromise = [];
     for (const [key, value] of Object.entries(nftData)) {
       uploadArrayPromise.push(uploadImageToIpfs(key, value));
@@ -192,6 +202,15 @@ export default function CreateNFT() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [acceptedFiles]);
 
+  // for escape key in Loading Start----------
+
+  useKeyPress('Escape', () => {
+    if (isSpinner) {
+      setIsStopModal(true);
+    }
+  });
+  //  for ecape key in Loading End-------
+
   const handleAddLayer = () => {
     setLayerData([
       ...layerData,
@@ -208,11 +227,19 @@ export default function CreateNFT() {
 
     // validation
     if (!totalImages || !collectionName || !collectionDesc || !nftPrice) {
+      generateImageRef.current.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center'
+      });
       return;
     }
 
     const validate = await validateForm(layerData);
     if (validate) {
+      layerRef.current.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center'
+      });
       return;
     }
     setIsSpinner(true);
@@ -468,6 +495,23 @@ export default function CreateNFT() {
     return rootAddress;
   };
 
+  const handleClickOpenLoadModal = () => {
+    setIsStopModal(true);
+  };
+
+  const handleCloseLoadModal = () => {
+    setIsStopModal(false);
+  };
+  const handledeleteLoadModal = () => {
+    setIsStopModal(false);
+    setIsSpinner(false);
+    if (isDataUploading) {
+      uploadBlockchainData([]);
+    } else {
+      setNftData([]);
+    }
+  };
+
   if (!account.isReady) {
     return (
       <Page title="Create you new Nft">
@@ -488,6 +532,26 @@ export default function CreateNFT() {
     <Page title="Create you new Nft">
       <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }} open={isSpinner}>
         <CircularProgress color="inherit" />
+        <div
+          style={{
+            color: '#fff',
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+            position: 'absolute',
+            top: 70,
+            right: 70
+          }}
+        >
+          {isSpinner ? (
+            <IconButton>
+              <CloseIcon
+                style={{ color: 'white', fontSize: '30px' }}
+                onClick={handleClickOpenLoadModal}
+              />
+            </IconButton>
+          ) : (
+            '  '
+          )}
+        </div>
       </Backdrop>
       <Container>
         <Typography variant="h4" sx={{ mb: 5 }}>
@@ -529,7 +593,7 @@ export default function CreateNFT() {
               data. Also will be implemented in future
             </li> */}
             <li>Some pages on development stage now</li>
-            <li>Product contains bugs. Please forgive us</li>
+            <li ref={generateImageRef}>Product contains bugs. Please forgive us</li>
           </ul>
         </Typography>
       </Container>
@@ -626,7 +690,7 @@ export default function CreateNFT() {
                   setIsRoyalityError(true);
                 }
               }}
-              error={isSubmitClick && !nftPrice}
+              error={isSubmitClick && isRoyalityError}
               fullWidth
             />
             <DetailPopover
@@ -639,7 +703,7 @@ export default function CreateNFT() {
               style={{ position: 'absolute', top: 32, right: 8, color: '#00AB55' }}
               onClick={() => setIsRoalityDetailOpen(!isRoalityDetailOpen)}
             />
-            {isRoyalityError || (isSubmitClick && !royalty) ? (
+            {isRoyalityError ? (
               <FormHelperText error>
                 Please Enter royalty upto 50% with max 1 decimal value.
               </FormHelperText>
@@ -683,7 +747,7 @@ export default function CreateNFT() {
           </Grid>
         </Grid>
         <Stack direction="row" alignItems="flex-end" justifyContent="space-between">
-          <Typography variant="h6" sx={{ marginTop: 5 }}>
+          <Typography variant="h6" sx={{ marginTop: 5 }} ref={layerRef}>
             Layers
           </Typography>
         </Stack>
@@ -874,6 +938,11 @@ export default function CreateNFT() {
         currentDeleting={currentDeleting}
       />
       <DetailModal handleModalClose={handleModalClose} {...modal} />
+      <CloseStopProcess
+        handleCloseLoadModal={handleCloseLoadModal}
+        open={isStopModal}
+        handleDelete={handledeleteLoadModal}
+      />
     </Page>
   );
 }
