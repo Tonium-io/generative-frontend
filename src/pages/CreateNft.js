@@ -99,7 +99,8 @@ export default function CreateNFT() {
   const [isStopModal, setIsStopModal] = useState(false);
   const [isDataUploading, setIsDataUploading] = useState(false);
   const {
-    state: { account, ton }
+    state: { account, ton, messages },
+    dispatch
   } = useContext(StoreContext);
 
   const generateImageRef = useRef(null);
@@ -169,6 +170,17 @@ export default function CreateNFT() {
     }
 
     const rootAddress = await uploadBlockchainData(returnData);
+    if (rootAddress) {
+      dispatch({
+        type: 'ADD_NOTIFICATION',
+        payload: 'Data Uploaded Succcessfully !!.'
+      });
+    } else {
+      dispatch({
+        type: 'ADD_NOTIFICATION',
+        payload: 'Some error occured while uploading data!'
+      });
+    }
     setIsSpinner(false);
     setModal({
       isOpen: true,
@@ -314,6 +326,10 @@ export default function CreateNFT() {
         status: 'new'
       });
     }
+    dispatch({
+      type: 'ADD_NOTIFICATION',
+      payload: 'Images Generated Succcessfully !!.'
+    });
     setNftData(andFinalImages);
     setIsSpinner(false);
 
@@ -494,6 +510,8 @@ export default function CreateNFT() {
     console.debug('[CREATE NFT] - Selling started');
     return rootAddress;
   };
+
+  // Modal on Spinner screen to end process
 
   const handleClickOpenLoadModal = () => {
     setIsStopModal(true);
