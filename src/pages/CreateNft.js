@@ -25,8 +25,8 @@ import { useDropzone } from 'react-dropzone';
 import mergeImages from 'merge-images';
 import { styled } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
-import QRCode from 'qrcode.react';
-import CopyToClipboard from 'react-copy-to-clipboard';
+// import QRCode from 'qrcode.react';
+// import CopyToClipboard from 'react-copy-to-clipboard';
 import InfoIcon from '@mui/icons-material/Info';
 import CloseIcon from '@mui/icons-material/Close';
 // components
@@ -39,6 +39,8 @@ import { validateForm } from '../components/_dashboard/nft/validateForm';
 import DetailPopover from '../components/_dashboard/nft/DetailPopover';
 import CloseStopProcess from '../components/_dashboard/nft/CloseStopProcess';
 import useKeyPress from '../components/useKeyPress';
+import CollectionCard from '../components/CollectionCard';
+import CreateDuplicateCollection from '../components/_dashboard/nft/CreateDuplicateCollection';
 
 import StoreContext from '../store/StoreContext';
 import UploaderTVC from '../assets/contracts/UploadDeGenerative.tvc';
@@ -98,8 +100,12 @@ export default function CreateNFT() {
   const [isSpinner, setIsSpinner] = useState(false);
   const [isStopModal, setIsStopModal] = useState(false);
   const [isDataUploading, setIsDataUploading] = useState(false);
+  const [collectionData, setCollectionData] = useState([]);
+  const [isAlreadyUploaded, setIsAlreadyUploaded] = useState(false);
+  const [previouslyUploaded, setPreviouslyUploaded] = useState();
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const {
-    state: { account, ton, messages },
+    state: { account, ton },
     dispatch
   } = useContext(StoreContext);
 
@@ -147,7 +153,25 @@ export default function CreateNFT() {
     setLayerData(newArr);
   };
 
+  // To generate duplicate collection --- start
+
+  const handleDuplicateGenerate = () => {
+    setIsAlreadyUploaded(false);
+    setIsDuplicateModalOpen(false);
+    getDataForBlockchain();
+  };
+
+  // To generate duplicate collection --- end
+
   const getDataForBlockchain = async () => {
+    if (
+      isAlreadyUploaded &&
+      previouslyUploaded.length === nftData.length &&
+      previouslyUploaded[0].traits.length === nftData[0].traits.length
+    ) {
+      setIsDuplicateModalOpen(true);
+      return;
+    }
     setIsSpinner(true);
     setIsDataUploading(true);
     const uploadArrayPromise = [];
@@ -170,10 +194,16 @@ export default function CreateNFT() {
     }
 
     const rootAddress = await uploadBlockchainData(returnData);
+    setIsAlreadyUploaded(true);
+    setPreviouslyUploaded(nftData);
     if (rootAddress) {
       dispatch({
         type: 'ADD_NOTIFICATION',
         payload: 'Data Uploaded Succcessfully !!.'
+      });
+      dispatch({
+        type: 'ADD_ROOTADDRESS',
+        payload: rootAddress
       });
     } else {
       dispatch({
@@ -182,23 +212,24 @@ export default function CreateNFT() {
       });
     }
     setIsSpinner(false);
-    setModal({
-      isOpen: true,
-      title: 'Deploy NFTs',
-      content: (
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={4}>
-            <QRCode value={rootAddress} />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <h3>Root address for minting</h3>
-            <CopyToClipboard text={rootAddress} onCopy={() => alert('Copied')}>
-              <div style={{ wordBreak: 'break-all', cursor: 'pointer' }}>{rootAddress}</div>
-            </CopyToClipboard>
-          </Grid>
-        </Grid>
-      )
-    });
+    setCollectionData([...collectionData, rootAddress]);
+    // setModal({
+    //   isOpen: true,
+    //   title: 'Deploy NFTs',
+    //   content: (
+    //     <Grid container spacing={2}>
+    //       <Grid item xs={12} md={4}>
+    //         <QRCode value={rootAddress} />
+    //       </Grid>
+    //       <Grid item xs={12} md={6}>
+    //         <h3>Root address for minting</h3>
+    //         <CopyToClipboard text={rootAddress} onCopy={() => alert('Copied')}>
+    //           <div style={{ wordBreak: 'break-all', cursor: 'pointer' }}>{rootAddress}</div>
+    //         </CopyToClipboard>
+    //       </Grid>
+    //     </Grid>
+    //   )
+    // });
 
     // const a = document.createElement('a');
     // const file = new Blob([JSON.stringify(returnData)], { type: 'application/json' });
@@ -881,7 +912,7 @@ export default function CreateNFT() {
                                 label="Trait Rarity (number)"
                                 value={file.traitRar}
                                 onChange={(e) => {
-                                  if (e.target.value > 0) {
+                                  if (e.target.value >= 0) {
                                     handleImageUpdate(e.target.value, 'rarity', index, data.id);
                                   }
                                 }}
@@ -949,6 +980,10 @@ export default function CreateNFT() {
           )}
         </Box>
       </Container>
+      <Container>
+        <CollectionCard collectionData={collectionData} />
+      </Container>
+      {/* Modals and Dailog Box */}
       <DeleteCardDialog
         open={open}
         handleClose={handleClose}
@@ -960,6 +995,11 @@ export default function CreateNFT() {
         handleCloseLoadModal={handleCloseLoadModal}
         open={isStopModal}
         handleDelete={handledeleteLoadModal}
+      />
+      <CreateDuplicateCollection
+        open={isDuplicateModalOpen}
+        handleDuplicateGenerate={handleDuplicateGenerate}
+        setIsDuplicateModalOpen={setIsDuplicateModalOpen}
       />
     </Page>
   );

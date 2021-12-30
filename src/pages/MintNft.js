@@ -26,7 +26,7 @@ import ShopProductCard from '../components/_dashboard/products/ProductCard';
 
 const MintNft = () => {
   const {
-    state: { account, ton }
+    state: { account, ton, newRootAddress }
   } = useContext(StoreContext);
   const [modal, setModal] = useState({ isOpen: false, title: undefined, content: undefined });
 
@@ -226,7 +226,7 @@ const MintNft = () => {
             <h3>Mint by admin</h3>
             <Formik
               initialValues={{
-                root: ''
+                root: newRootAddress
               }}
               validationSchema={Yup.object().shape({
                 root: Yup.string().required()
@@ -273,7 +273,7 @@ const MintNft = () => {
             <h3>Mint by anybody (using connected wallet)</h3>
             <Formik
               initialValues={{
-                root: '',
+                root: newRootAddress,
                 price: ''
               }}
               validationSchema={Yup.object().shape({

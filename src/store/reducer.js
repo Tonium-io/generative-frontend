@@ -29,6 +29,11 @@ const reducer = (state, action) => {
           ...state.messages
         ]
       };
+    case 'ADD_ROOTADDRESS':
+      return {
+        ...state,
+        newRootAddress: action.payload
+      };
     default:
       throw new Error();
   }
