@@ -47,7 +47,9 @@ const CreateReducer = () => {
       public: null,
       balance: null, // maybe in future we can use ton.getBalance().
       ava: null // maybe.
-    }
+    },
+    messages: [], // array to store notifications
+    newRootAddress: ''
   });
   useEffect(() => {
     InitTon(dispatch).then();

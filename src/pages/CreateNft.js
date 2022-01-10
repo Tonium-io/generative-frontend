@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-syntax */
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, useRef } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { create } from 'ipfs-http-client';
 
@@ -18,14 +18,17 @@ import {
   Grid,
   FormHelperText,
   Backdrop,
-  CircularProgress
+  CircularProgress,
+  IconButton
 } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
 import mergeImages from 'merge-images';
 import { styled } from '@mui/material/styles';
 import DeleteIcon from '@mui/icons-material/Delete';
-import QRCode from 'qrcode.react';
-import CopyToClipboard from 'react-copy-to-clipboard';
+// import QRCode from 'qrcode.react';
+// import CopyToClipboard from 'react-copy-to-clipboard';
+import InfoIcon from '@mui/icons-material/Info';
+import CloseIcon from '@mui/icons-material/Close';
 // components
 import { signerExternal } from '@tonclient/core';
 import Page from '../components/Page';
@@ -33,6 +36,11 @@ import NFTList from '../components/_dashboard/nft/NFTList';
 import DeleteCardDialog from '../components/_dashboard/nft/DeleteCardDialog';
 import DetailModal from '../components/_dashboard/nft/DetailModal';
 import { validateForm } from '../components/_dashboard/nft/validateForm';
+import DetailPopover from '../components/_dashboard/nft/DetailPopover';
+import CloseStopProcess from '../components/_dashboard/nft/CloseStopProcess';
+import useKeyPress from '../components/useKeyPress';
+import CollectionCard from '../components/CollectionCard';
+import CreateDuplicateCollection from '../components/_dashboard/nft/CreateDuplicateCollection';
 
 import StoreContext from '../store/StoreContext';
 import UploaderTVC from '../assets/contracts/UploadDeGenerative.tvc';
@@ -76,7 +84,11 @@ export default function CreateNFT() {
   const [collectionDesc, setCollectionDesc] = useState('');
   const [isSubmitClick, setIsSubmitClick] = useState(false);
   const [layerData, setLayerData] = useState([]);
-  const [totalImages, setTotalImages] = useState(4);
+  const [totalImages, setTotalImages] = useState(10);
+  const [royalty, setRoyalty] = useState(0);
+  const [isRoyalityError, setIsRoyalityError] = useState(false);
+  const [isRoalityDetailOpen, setIsRoalityDetailOpen] = useState(false);
+  const [isPriceCoffOpen, setIsPriceCoffOpen] = useState(false);
   const [nftPrice, setNftPrice] = useState(1);
   const [nftPriceCoeff, setNftPriceCoeff] = useState(100);
   const [nftData, setNftData] = useState([]);
@@ -86,9 +98,19 @@ export default function CreateNFT() {
   const [modal, setModal] = useState({ isOpen: false, title: undefined, content: undefined });
   const [currentDeleting, setCurrentDeleting] = useState('');
   const [isSpinner, setIsSpinner] = useState(false);
+  const [isStopModal, setIsStopModal] = useState(false);
+  const [isDataUploading, setIsDataUploading] = useState(false);
+  const [collectionData, setCollectionData] = useState([]);
+  const [isAlreadyUploaded, setIsAlreadyUploaded] = useState(false);
+  const [previouslyUploaded, setPreviouslyUploaded] = useState();
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const {
-    state: { account, ton }
+    state: { account, ton },
+    dispatch
   } = useContext(StoreContext);
+
+  const generateImageRef = useRef(null);
+  const layerRef = useRef(null);
 
   const { getRootProps, getInputProps, acceptedFiles, isDragActive } = useDropzone();
 
@@ -131,8 +153,27 @@ export default function CreateNFT() {
     setLayerData(newArr);
   };
 
+  // To generate duplicate collection --- start
+
+  const handleDuplicateGenerate = () => {
+    setIsAlreadyUploaded(false);
+    setIsDuplicateModalOpen(false);
+    getDataForBlockchain();
+  };
+
+  // To generate duplicate collection --- end
+
   const getDataForBlockchain = async () => {
+    if (
+      isAlreadyUploaded &&
+      previouslyUploaded.length === nftData.length &&
+      previouslyUploaded[0].traits.length === nftData[0].traits.length
+    ) {
+      setIsDuplicateModalOpen(true);
+      return;
+    }
     setIsSpinner(true);
+    setIsDataUploading(true);
     const uploadArrayPromise = [];
     for (const [key, value] of Object.entries(nftData)) {
       uploadArrayPromise.push(uploadImageToIpfs(key, value));
@@ -147,29 +188,48 @@ export default function CreateNFT() {
         description: data.description,
         traits: data.traits,
         price: nftPrice,
-        image: `ipfs://${uploadedData[key]}`
+        image: `ipfs://${uploadedData[key]}`,
+        royalty
       });
     }
 
     const rootAddress = await uploadBlockchainData(returnData);
+    setIsAlreadyUploaded(true);
+    setPreviouslyUploaded(nftData);
+    if (rootAddress) {
+      dispatch({
+        type: 'ADD_NOTIFICATION',
+        payload: 'Data Uploaded Succcessfully !!.'
+      });
+      dispatch({
+        type: 'ADD_ROOTADDRESS',
+        payload: rootAddress
+      });
+    } else {
+      dispatch({
+        type: 'ADD_NOTIFICATION',
+        payload: 'Some error occured while uploading data!'
+      });
+    }
     setIsSpinner(false);
-    setModal({
-      isOpen: true,
-      title: 'Deploy NFTs',
-      content: (
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={4}>
-            <QRCode value={rootAddress} />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <h3>Root address for minting</h3>
-            <CopyToClipboard text={rootAddress} onCopy={() => alert('Copied')}>
-              <div style={{ wordBreak: 'break-all', cursor: 'pointer' }}>{rootAddress}</div>
-            </CopyToClipboard>
-          </Grid>
-        </Grid>
-      )
-    });
+    setCollectionData([...collectionData, rootAddress]);
+    // setModal({
+    //   isOpen: true,
+    //   title: 'Deploy NFTs',
+    //   content: (
+    //     <Grid container spacing={2}>
+    //       <Grid item xs={12} md={4}>
+    //         <QRCode value={rootAddress} />
+    //       </Grid>
+    //       <Grid item xs={12} md={6}>
+    //         <h3>Root address for minting</h3>
+    //         <CopyToClipboard text={rootAddress} onCopy={() => alert('Copied')}>
+    //           <div style={{ wordBreak: 'break-all', cursor: 'pointer' }}>{rootAddress}</div>
+    //         </CopyToClipboard>
+    //       </Grid>
+    //     </Grid>
+    //   )
+    // });
 
     // const a = document.createElement('a');
     // const file = new Blob([JSON.stringify(returnData)], { type: 'application/json' });
@@ -184,6 +244,15 @@ export default function CreateNFT() {
     handleAddMultiImage(acceptedFiles);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [acceptedFiles]);
+
+  // for escape key in Loading Start----------
+
+  useKeyPress('Escape', () => {
+    if (isSpinner) {
+      setIsStopModal(true);
+    }
+  });
+  //  for ecape key in Loading End-------
 
   const handleAddLayer = () => {
     setLayerData([
@@ -201,11 +270,19 @@ export default function CreateNFT() {
 
     // validation
     if (!totalImages || !collectionName || !collectionDesc || !nftPrice) {
+      generateImageRef.current.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center'
+      });
       return;
     }
 
     const validate = await validateForm(layerData);
     if (validate) {
+      layerRef.current.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center'
+      });
       return;
     }
     setIsSpinner(true);
@@ -280,6 +357,10 @@ export default function CreateNFT() {
         status: 'new'
       });
     }
+    dispatch({
+      type: 'ADD_NOTIFICATION',
+      payload: 'Images Generated Succcessfully !!.'
+    });
     setNftData(andFinalImages);
     setIsSpinner(false);
 
@@ -461,6 +542,25 @@ export default function CreateNFT() {
     return rootAddress;
   };
 
+  // Modal on Spinner screen to end process
+
+  const handleClickOpenLoadModal = () => {
+    setIsStopModal(true);
+  };
+
+  const handleCloseLoadModal = () => {
+    setIsStopModal(false);
+  };
+  const handledeleteLoadModal = () => {
+    setIsStopModal(false);
+    setIsSpinner(false);
+    if (isDataUploading) {
+      uploadBlockchainData([]);
+    } else {
+      setNftData([]);
+    }
+  };
+
   if (!account.isReady) {
     return (
       <Page title="Create you new Nft">
@@ -481,6 +581,26 @@ export default function CreateNFT() {
     <Page title="Create you new Nft">
       <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }} open={isSpinner}>
         <CircularProgress color="inherit" />
+        <div
+          style={{
+            color: '#fff',
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+            position: 'absolute',
+            top: 70,
+            right: 70
+          }}
+        >
+          {isSpinner ? (
+            <IconButton>
+              <CloseIcon
+                style={{ color: 'white', fontSize: '30px' }}
+                onClick={handleClickOpenLoadModal}
+              />
+            </IconButton>
+          ) : (
+            '  '
+          )}
+        </div>
       </Backdrop>
       <Container>
         <Typography variant="h4" sx={{ mb: 5 }}>
@@ -517,19 +637,19 @@ export default function CreateNFT() {
               Generation a lot of images (1000+) can be slow (10+ seconds). Future optimization is
               needed
             </li>
-            <li>
+            {/* <li>
               Blockchain integration is not available on web, please use TON CLI to deploy prepared
               data. Also will be implemented in future
-            </li>
+            </li> */}
             <li>Some pages on development stage now</li>
-            <li>Product contains bugs. Please forgive us</li>
+            <li ref={generateImageRef}>Product contains bugs. Please forgive us</li>
           </ul>
         </Typography>
       </Container>
 
       <Container>
         <Grid container spacing={2}>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={8}>
             <TextField
               label="Collection Name"
               value={collectionName}
@@ -566,27 +686,7 @@ export default function CreateNFT() {
               ''
             )}
           </Grid>
-          <Grid item xs={12} md={4}>
-            <TextField
-              label="NFT price (in TON)"
-              type="number"
-              value={nftPrice}
-              onChange={(e) => {
-                const number = e.target.value;
-                if (number >= 0) {
-                  setNftPrice(number);
-                }
-              }}
-              error={isSubmitClick && !nftPrice}
-              fullWidth
-            />
-            {isSubmitClick && !nftPrice ? (
-              <FormHelperText error>Please Enter price of NFTs greater than 0</FormHelperText>
-            ) : (
-              ''
-            )}
-          </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={4} style={{ position: 'relative' }}>
             <TextField
               label="NFT price coefficient"
               type="number"
@@ -600,8 +700,82 @@ export default function CreateNFT() {
               error={isSubmitClick && !nftPriceCoeff}
               fullWidth
             />
+            <DetailPopover
+              open={isPriceCoffOpen}
+              handleClose={() => setIsPriceCoffOpen(!isPriceCoffOpen)}
+              type="price"
+              title="The coefficient of the cost increase of each subsequent NFT. The default value of 100 means the same cost. For example, 120 means a 20% price increase for each next token"
+            />
+            <InfoIcon
+              style={{ position: 'absolute', top: 32, right: 8, color: '#00AB55' }}
+              onClick={() => setIsPriceCoffOpen(!isPriceCoffOpen)}
+            />
             {isSubmitClick && !nftPriceCoeff ? (
               <FormHelperText error>Please Enter price coefficient greater than 0</FormHelperText>
+            ) : (
+              ''
+            )}
+          </Grid>
+          <Grid item xs={12} md={4} style={{ position: 'relative' }}>
+            <TextField
+              label="Royalty (in %)"
+              // type="number"
+              inputProps={{ inputMode: 'decimal' }}
+              value={royalty}
+              step={0.5}
+              onChange={(e) => {
+                const number = e.target.value;
+                // console.log('number', number.toString().split('.')[1].split(''));
+                if (number >= 0 && number <= 50) {
+                  setRoyalty(number);
+                  setIsRoyalityError(false);
+                  if (
+                    number.toString().split('.')[1] &&
+                    number.toString().split('.')[1].split('').length > 1
+                  ) {
+                    setIsRoyalityError(true);
+                  }
+                } else {
+                  setIsRoyalityError(true);
+                }
+              }}
+              error={isSubmitClick && isRoyalityError}
+              fullWidth
+            />
+            <DetailPopover
+              open={isRoalityDetailOpen}
+              handleClose={() => setIsRoalityDetailOpen(!isRoalityDetailOpen)}
+              type="royalty"
+              title="Creator's lifetime fee. Suggested: 0%, 2.5%, 10%, 25%. Maximum is 50%. Royalty is the amount you receive for each sale of your artwork on the secondary market."
+            />
+            <InfoIcon
+              style={{ position: 'absolute', top: 32, right: 8, color: '#00AB55' }}
+              onClick={() => setIsRoalityDetailOpen(!isRoalityDetailOpen)}
+            />
+            {isRoyalityError ? (
+              <FormHelperText error>
+                Please Enter royalty upto 50% with max 1 decimal value.
+              </FormHelperText>
+            ) : (
+              ''
+            )}
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <TextField
+              label="NFT price (in EVERs)"
+              type="number"
+              value={nftPrice}
+              onChange={(e) => {
+                const number = e.target.value;
+                if (number >= 0) {
+                  setNftPrice(number);
+                }
+              }}
+              error={isSubmitClick && !nftPrice}
+              fullWidth
+            />
+            {isSubmitClick && !nftPrice ? (
+              <FormHelperText error>Please Enter price of NFTs greater than 0</FormHelperText>
             ) : (
               ''
             )}
@@ -622,7 +796,7 @@ export default function CreateNFT() {
           </Grid>
         </Grid>
         <Stack direction="row" alignItems="flex-end" justifyContent="space-between">
-          <Typography variant="h6" sx={{ marginTop: 5 }}>
+          <Typography variant="h6" sx={{ marginTop: 5 }} ref={layerRef}>
             Layers
           </Typography>
         </Stack>
@@ -738,7 +912,7 @@ export default function CreateNFT() {
                                 label="Trait Rarity (number)"
                                 value={file.traitRar}
                                 onChange={(e) => {
-                                  if (e.target.value > 0) {
+                                  if (e.target.value >= 0) {
                                     handleImageUpdate(e.target.value, 'rarity', index, data.id);
                                   }
                                 }}
@@ -806,6 +980,10 @@ export default function CreateNFT() {
           )}
         </Box>
       </Container>
+      <Container>
+        <CollectionCard collectionData={collectionData} />
+      </Container>
+      {/* Modals and Dailog Box */}
       <DeleteCardDialog
         open={open}
         handleClose={handleClose}
@@ -813,6 +991,16 @@ export default function CreateNFT() {
         currentDeleting={currentDeleting}
       />
       <DetailModal handleModalClose={handleModalClose} {...modal} />
+      <CloseStopProcess
+        handleCloseLoadModal={handleCloseLoadModal}
+        open={isStopModal}
+        handleDelete={handledeleteLoadModal}
+      />
+      <CreateDuplicateCollection
+        open={isDuplicateModalOpen}
+        handleDuplicateGenerate={handleDuplicateGenerate}
+        setIsDuplicateModalOpen={setIsDuplicateModalOpen}
+      />
     </Page>
   );
 }
