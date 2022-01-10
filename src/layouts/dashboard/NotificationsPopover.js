@@ -1,7 +1,7 @@
 import faker from 'faker';
 import PropTypes from 'prop-types';
 import { noCase } from 'change-case';
-import { useRef, useState } from 'react';
+import { useRef, useState, useContext } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { set, sub, formatDistanceToNow } from 'date-fns';
 import { Icon } from '@iconify/react';
@@ -30,6 +30,7 @@ import { mockImgAvatar } from '../../utils/mockImages';
 // components
 import Scrollbar from '../../components/Scrollbar';
 import MenuPopover from '../../components/MenuPopover';
+import StoreContext from '../../store/StoreContext';
 
 // ----------------------------------------------------------------------
 
@@ -115,6 +116,12 @@ function renderContent(notification) {
       title
     };
   }
+  if (notification.type === 'system_generated') {
+    return {
+      avatar: <img alt={notification.title} src="/favicon/nefertit-favi.svg" />,
+      title
+    };
+  }
   return {
     avatar: <img alt={notification.title} src={notification.avatar} />,
     title
@@ -167,6 +174,10 @@ function NotificationItem({ notification }) {
 }
 
 export default function NotificationsPopover() {
+  const {
+    state: { messages }
+  } = useContext(StoreContext);
+
   const anchorRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState(NOTIFICATIONS);
@@ -202,7 +213,7 @@ export default function NotificationsPopover() {
           })
         }}
       >
-        <Badge badgeContent={totalUnRead} color="error">
+        <Badge badgeContent={totalUnRead + messages?.length} color="error">
           <Icon icon={bellFill} width={20} height={20} />
         </Badge>
       </IconButton>
@@ -217,7 +228,7 @@ export default function NotificationsPopover() {
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="subtitle1">Notifications (soon)</Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              You have {totalUnRead} unread messages
+              You have {totalUnRead + messages?.length} unread messages
             </Typography>
           </Box>
 
@@ -241,6 +252,9 @@ export default function NotificationsPopover() {
               </ListSubheader>
             }
           >
+            {messages.map((notification) => (
+              <NotificationItem key={notification.id} notification={notification} />
+            ))}
             {notifications.slice(0, 2).map((notification) => (
               <NotificationItem key={notification.id} notification={notification} />
             ))}
