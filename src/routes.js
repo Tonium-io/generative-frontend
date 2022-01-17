@@ -11,6 +11,8 @@ import CreateNft from './pages/CreateNft';
 import NotFound from './pages/Page404';
 import Login from './pages/Login';
 import MintNft from './pages/MintNft';
+import MinedNft from './pages/MinedNft';
+import MyNft from './pages/MyNft';
 
 // ----------------------------------------------------------------------
 
@@ -23,7 +25,8 @@ export default function Router() {
         { path: '/dashboard', element: <DashboardApp /> },
         // { path: 'user', element: <User /> },
         { path: 'nfts', element: <Nfts /> },
-        { path: 'mynfts', element: <Nfts /> },
+        { path: 'mynfts', element: <MyNft /> },
+        { path: 'mynfts/:rootAddress', element: <MinedNft /> },
         { path: 'create', element: <CreateNft /> },
         { path: 'mint', element: <MintNft /> },
         // { path: 'blog', element: <Blog /> },

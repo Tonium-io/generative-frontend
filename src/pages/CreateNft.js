@@ -80,10 +80,25 @@ const ProductImgStyle = styled('img')({
 // ----------------------------------------------------------------------
 
 export default function CreateNFT() {
-  const [collectionName, setCollectionName] = useState('');
-  const [collectionDesc, setCollectionDesc] = useState('');
+  const {
+    state: { account, ton, myNfts },
+    dispatch
+  } = useContext(StoreContext);
+
+  const [collectionName, setCollectionName] = useState(
+    myNfts.length && myNfts[myNfts.length - 1].collection.collectionName
+      ? myNfts[myNfts.length - 1].collection.collectionName
+      : ''
+  );
+  const [collectionDesc, setCollectionDesc] = useState(
+    myNfts.length && myNfts[myNfts.length - 1].collection.collectionDesc
+      ? myNfts[myNfts.length - 1].collection.collectionDesc
+      : ''
+  );
   const [isSubmitClick, setIsSubmitClick] = useState(false);
-  const [layerData, setLayerData] = useState([]);
+  const [layerData, setLayerData] = useState(
+    myNfts.length && myNfts[myNfts.length - 1].layerData ? myNfts[myNfts.length - 1].layerData : []
+  );
   const [totalImages, setTotalImages] = useState(10);
   const [royalty, setRoyalty] = useState(0);
   const [isRoyalityError, setIsRoyalityError] = useState(false);
@@ -91,7 +106,9 @@ export default function CreateNFT() {
   const [isPriceCoffOpen, setIsPriceCoffOpen] = useState(false);
   const [nftPrice, setNftPrice] = useState(1);
   const [nftPriceCoeff, setNftPriceCoeff] = useState(100);
-  const [nftData, setNftData] = useState([]);
+  const [nftData, setNftData] = useState(
+    myNfts.length && myNfts[myNfts.length - 1].nftData ? myNfts[myNfts.length - 1].nftData : []
+  );
   const [currentLayer, setCurrentLayer] = useState();
   const [currentDeletedIndex, setCurrentDeletedIndex] = useState();
   const [open, setOpen] = useState(false);
@@ -104,10 +121,6 @@ export default function CreateNFT() {
   const [isAlreadyUploaded, setIsAlreadyUploaded] = useState(false);
   const [previouslyUploaded, setPreviouslyUploaded] = useState();
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
-  const {
-    state: { account, ton },
-    dispatch
-  } = useContext(StoreContext);
 
   const generateImageRef = useRef(null);
   const layerRef = useRef(null);
@@ -211,6 +224,18 @@ export default function CreateNFT() {
         payload: 'Some error occured while uploading data!'
       });
     }
+    dispatch({
+      type: 'ADD_NFTDATA',
+      payload: {
+        layerData,
+        nftData,
+        collection: {
+          collectionName,
+          collectionDesc,
+          rootAddress
+        }
+      }
+    });
     setIsSpinner(false);
     setCollectionData([...collectionData, rootAddress]);
     // setModal({
@@ -968,6 +993,7 @@ export default function CreateNFT() {
             </Button>
           )}
           <NFTList nfts={nftData} />
+          <CollectionCard collectionData={collectionData} />
           {!!nftData.length && (
             <Button
               onClick={getDataForBlockchain}
@@ -979,9 +1005,6 @@ export default function CreateNFT() {
             </Button>
           )}
         </Box>
-      </Container>
-      <Container>
-        <CollectionCard collectionData={collectionData} />
       </Container>
       {/* Modals and Dailog Box */}
       <DeleteCardDialog
