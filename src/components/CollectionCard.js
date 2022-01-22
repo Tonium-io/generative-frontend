@@ -81,8 +81,9 @@ function CollectionCard({ collectionData, collectionDetails }) {
                     <Button
                       variant="contained"
                       onClick={() => history(`/dashboard/mynfts/${item}`)}
+                      sx={{ mt: 1.5 }}
                     >
-                      View on IPFS
+                      Mint Nfts
                     </Button>
                   </Stack>
                 </Card>

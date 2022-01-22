@@ -229,6 +229,7 @@ export default function CreateNFT() {
       payload: {
         layerData,
         nftData,
+        ipfsUploaded: uploadedData[0],
         collection: {
           collectionName,
           collectionDesc,

@@ -15,8 +15,6 @@ export default function MyNft() {
     state: { myNfts }
   } = useContext(StoreContext);
 
-  console.log('MyNft Data', myNfts);
-
   // const formik = useFormik({
   //   initialValues: {
   //     gender: '',
