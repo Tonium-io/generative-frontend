@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { noCase } from 'change-case';
 import { useRef, useState, useContext } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { set, sub, formatDistanceToNow } from 'date-fns';
+import { set, sub, formatDistanceToNowStrict } from 'date-fns';
 import { Icon } from '@iconify/react';
 import bellFill from '@iconify/icons-eva/bell-fill';
 import clockFill from '@iconify/icons-eva/clock-fill';
@@ -165,7 +165,7 @@ function NotificationItem({ notification }) {
             }}
           >
             <Box component={Icon} icon={clockFill} sx={{ mr: 0.5, width: 16, height: 16 }} />
-            {formatDistanceToNow(new Date(notification.createdAt))}
+            {formatDistanceToNowStrict(new Date(notification.createdAt))}
           </Typography>
         }
       />

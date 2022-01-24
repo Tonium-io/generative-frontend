@@ -49,7 +49,8 @@ const CreateReducer = () => {
       ava: null // maybe.
     },
     messages: [], // array to store notifications
-    newRootAddress: ''
+    newRootAddress: '',
+    myNfts: []
   });
   useEffect(() => {
     InitTon(dispatch).then();
