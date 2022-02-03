@@ -19,7 +19,8 @@ import {
   FormHelperText,
   Backdrop,
   CircularProgress,
-  IconButton
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
 import mergeImages from 'merge-images';
@@ -36,7 +37,6 @@ import NFTList from '../components/_dashboard/nft/NFTList';
 import DeleteCardDialog from '../components/_dashboard/nft/DeleteCardDialog';
 import DetailModal from '../components/_dashboard/nft/DetailModal';
 import { validateForm } from '../components/_dashboard/nft/validateForm';
-import DetailPopover from '../components/_dashboard/nft/DetailPopover';
 import CloseStopProcess from '../components/_dashboard/nft/CloseStopProcess';
 import useKeyPress from '../components/useKeyPress';
 import CollectionCard from '../components/CollectionCard';
@@ -80,18 +80,33 @@ const ProductImgStyle = styled('img')({
 // ----------------------------------------------------------------------
 
 export default function CreateNFT() {
-  const [collectionName, setCollectionName] = useState('');
-  const [collectionDesc, setCollectionDesc] = useState('');
+  const {
+    state: { account, ton, myNfts },
+    dispatch
+  } = useContext(StoreContext);
+
+  const [collectionName, setCollectionName] = useState(
+    myNfts.length && myNfts[myNfts.length - 1].collection.collectionName
+      ? myNfts[myNfts.length - 1].collection.collectionName
+      : ''
+  );
+  const [collectionDesc, setCollectionDesc] = useState(
+    myNfts.length && myNfts[myNfts.length - 1].collection.collectionDesc
+      ? myNfts[myNfts.length - 1].collection.collectionDesc
+      : ''
+  );
   const [isSubmitClick, setIsSubmitClick] = useState(false);
-  const [layerData, setLayerData] = useState([]);
+  const [layerData, setLayerData] = useState(
+    myNfts.length && myNfts[myNfts.length - 1].layerData ? myNfts[myNfts.length - 1].layerData : []
+  );
   const [totalImages, setTotalImages] = useState(10);
   const [royalty, setRoyalty] = useState(0);
   const [isRoyalityError, setIsRoyalityError] = useState(false);
-  const [isRoalityDetailOpen, setIsRoalityDetailOpen] = useState(false);
-  const [isPriceCoffOpen, setIsPriceCoffOpen] = useState(false);
   const [nftPrice, setNftPrice] = useState(1);
   const [nftPriceCoeff, setNftPriceCoeff] = useState(100);
-  const [nftData, setNftData] = useState([]);
+  const [nftData, setNftData] = useState(
+    myNfts.length && myNfts[myNfts.length - 1].nftData ? myNfts[myNfts.length - 1].nftData : []
+  );
   const [currentLayer, setCurrentLayer] = useState();
   const [currentDeletedIndex, setCurrentDeletedIndex] = useState();
   const [open, setOpen] = useState(false);
@@ -104,10 +119,6 @@ export default function CreateNFT() {
   const [isAlreadyUploaded, setIsAlreadyUploaded] = useState(false);
   const [previouslyUploaded, setPreviouslyUploaded] = useState();
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
-  const {
-    state: { account, ton },
-    dispatch
-  } = useContext(StoreContext);
 
   const generateImageRef = useRef(null);
   const layerRef = useRef(null);
@@ -211,6 +222,19 @@ export default function CreateNFT() {
         payload: 'Some error occured while uploading data!'
       });
     }
+    dispatch({
+      type: 'ADD_NFTDATA',
+      payload: {
+        layerData,
+        nftData,
+        ipfsUploaded: uploadedData[0],
+        collection: {
+          collectionName,
+          collectionDesc,
+          rootAddress
+        }
+      }
+    });
     setIsSpinner(false);
     setCollectionData([...collectionData, rootAddress]);
     // setModal({
@@ -700,16 +724,9 @@ export default function CreateNFT() {
               error={isSubmitClick && !nftPriceCoeff}
               fullWidth
             />
-            <DetailPopover
-              open={isPriceCoffOpen}
-              handleClose={() => setIsPriceCoffOpen(!isPriceCoffOpen)}
-              type="price"
-              title="The coefficient of the cost increase of each subsequent NFT. The default value of 100 means the same cost. For example, 120 means a 20% price increase for each next token"
-            />
-            <InfoIcon
-              style={{ position: 'absolute', top: 32, right: 8, color: '#00AB55' }}
-              onClick={() => setIsPriceCoffOpen(!isPriceCoffOpen)}
-            />
+            <Tooltip title="The coefficient of the cost increase of each subsequent NFT. The default value of 100 means the same cost. For example, 120 means a 20% price increase for each next token">
+              <InfoIcon style={{ position: 'absolute', top: 32, right: 8, color: '#00AB55' }} />
+            </Tooltip>
             {isSubmitClick && !nftPriceCoeff ? (
               <FormHelperText error>Please Enter price coefficient greater than 0</FormHelperText>
             ) : (
@@ -742,16 +759,9 @@ export default function CreateNFT() {
               error={isSubmitClick && isRoyalityError}
               fullWidth
             />
-            <DetailPopover
-              open={isRoalityDetailOpen}
-              handleClose={() => setIsRoalityDetailOpen(!isRoalityDetailOpen)}
-              type="royalty"
-              title="Creator's lifetime fee. Suggested: 0%, 2.5%, 10%, 25%. Maximum is 50%. Royalty is the amount you receive for each sale of your artwork on the secondary market."
-            />
-            <InfoIcon
-              style={{ position: 'absolute', top: 32, right: 8, color: '#00AB55' }}
-              onClick={() => setIsRoalityDetailOpen(!isRoalityDetailOpen)}
-            />
+            <Tooltip title="Creator's lifetime fee. Suggested: 0%, 2.5%, 10%, 25%. Maximum is 50%. Royalty is the amount you receive for each sale of your artwork on the secondary market.">
+              <InfoIcon style={{ position: 'absolute', top: 32, right: 8, color: '#00AB55' }} />
+            </Tooltip>
             {isRoyalityError ? (
               <FormHelperText error>
                 Please Enter royalty upto 50% with max 1 decimal value.
@@ -968,6 +978,7 @@ export default function CreateNFT() {
             </Button>
           )}
           <NFTList nfts={nftData} />
+          <CollectionCard collectionData={collectionData} />
           {!!nftData.length && (
             <Button
               onClick={getDataForBlockchain}
@@ -979,9 +990,6 @@ export default function CreateNFT() {
             </Button>
           )}
         </Box>
-      </Container>
-      <Container>
-        <CollectionCard collectionData={collectionData} />
       </Container>
       {/* Modals and Dailog Box */}
       <DeleteCardDialog

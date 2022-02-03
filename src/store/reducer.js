@@ -22,17 +22,28 @@ const reducer = (state, action) => {
             type: 'system_generated',
             createdAt: set(new Date(), {
               hours: new Date().getHours(),
-              minutes: new Date().getHours()
+              minutes: new Date().getHours(),
+              seconds: new Date().getSeconds()
             }),
             isUnRead: true
           },
           ...state.messages
         ]
       };
+    case 'REMOVE_NOTIFICATION':
+      return {
+        ...state,
+        messages: []
+      };
     case 'ADD_ROOTADDRESS':
       return {
         ...state,
         newRootAddress: action.payload
+      };
+    case 'ADD_NFTDATA':
+      return {
+        ...state,
+        myNfts: [...state.myNfts, action.payload]
       };
     default:
       throw new Error();

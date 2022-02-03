@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { noCase } from 'change-case';
 import { useRef, useState, useContext } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { set, sub, formatDistanceToNow } from 'date-fns';
+import { set, sub, formatDistanceToNowStrict } from 'date-fns';
 import { Icon } from '@iconify/react';
 import bellFill from '@iconify/icons-eva/bell-fill';
 import clockFill from '@iconify/icons-eva/clock-fill';
@@ -165,7 +165,7 @@ function NotificationItem({ notification }) {
             }}
           >
             <Box component={Icon} icon={clockFill} sx={{ mr: 0.5, width: 16, height: 16 }} />
-            {formatDistanceToNow(new Date(notification.createdAt))}
+            {formatDistanceToNowStrict(new Date(notification.createdAt))}
           </Typography>
         }
       />
@@ -226,7 +226,7 @@ export default function NotificationsPopover() {
       >
         <Box sx={{ display: 'flex', alignItems: 'center', py: 2, px: 2.5 }}>
           <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="subtitle1">Notifications (soon)</Typography>
+            <Typography variant="subtitle1">Notifications</Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               You have {totalUnRead + messages?.length} unread messages
             </Typography>
@@ -278,7 +278,7 @@ export default function NotificationsPopover() {
 
         <Box sx={{ p: 1 }}>
           <Button fullWidth disableRipple component={RouterLink} to="#">
-            View All (soon)
+            View All
           </Button>
         </Box>
       </MenuPopover>

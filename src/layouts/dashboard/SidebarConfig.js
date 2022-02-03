@@ -33,7 +33,7 @@ const sidebarConfig = [
     icon: getIcon(buldFill)
   },
   {
-    title: 'My NFTs (soon)',
+    title: 'My NFTs',
     path: '/dashboard/mynfts',
     icon: getIcon(colorFill)
   },
