@@ -30,6 +30,11 @@ const reducer = (state, action) => {
           ...state.messages
         ]
       };
+    case 'REMOVE_NOTIFICATION':
+      return {
+        ...state,
+        messages: []
+      };
     case 'ADD_ROOTADDRESS':
       return {
         ...state,

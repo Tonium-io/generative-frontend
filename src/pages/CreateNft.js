@@ -19,7 +19,8 @@ import {
   FormHelperText,
   Backdrop,
   CircularProgress,
-  IconButton
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
 import mergeImages from 'merge-images';
@@ -36,7 +37,6 @@ import NFTList from '../components/_dashboard/nft/NFTList';
 import DeleteCardDialog from '../components/_dashboard/nft/DeleteCardDialog';
 import DetailModal from '../components/_dashboard/nft/DetailModal';
 import { validateForm } from '../components/_dashboard/nft/validateForm';
-import DetailPopover from '../components/_dashboard/nft/DetailPopover';
 import CloseStopProcess from '../components/_dashboard/nft/CloseStopProcess';
 import useKeyPress from '../components/useKeyPress';
 import CollectionCard from '../components/CollectionCard';
@@ -102,8 +102,6 @@ export default function CreateNFT() {
   const [totalImages, setTotalImages] = useState(10);
   const [royalty, setRoyalty] = useState(0);
   const [isRoyalityError, setIsRoyalityError] = useState(false);
-  const [isRoalityDetailOpen, setIsRoalityDetailOpen] = useState(false);
-  const [isPriceCoffOpen, setIsPriceCoffOpen] = useState(false);
   const [nftPrice, setNftPrice] = useState(1);
   const [nftPriceCoeff, setNftPriceCoeff] = useState(100);
   const [nftData, setNftData] = useState(
@@ -726,16 +724,9 @@ export default function CreateNFT() {
               error={isSubmitClick && !nftPriceCoeff}
               fullWidth
             />
-            <DetailPopover
-              open={isPriceCoffOpen}
-              handleClose={() => setIsPriceCoffOpen(!isPriceCoffOpen)}
-              type="price"
-              title="The coefficient of the cost increase of each subsequent NFT. The default value of 100 means the same cost. For example, 120 means a 20% price increase for each next token"
-            />
-            <InfoIcon
-              style={{ position: 'absolute', top: 32, right: 8, color: '#00AB55' }}
-              onClick={() => setIsPriceCoffOpen(!isPriceCoffOpen)}
-            />
+            <Tooltip title="The coefficient of the cost increase of each subsequent NFT. The default value of 100 means the same cost. For example, 120 means a 20% price increase for each next token">
+              <InfoIcon style={{ position: 'absolute', top: 32, right: 8, color: '#00AB55' }} />
+            </Tooltip>
             {isSubmitClick && !nftPriceCoeff ? (
               <FormHelperText error>Please Enter price coefficient greater than 0</FormHelperText>
             ) : (
@@ -768,16 +759,9 @@ export default function CreateNFT() {
               error={isSubmitClick && isRoyalityError}
               fullWidth
             />
-            <DetailPopover
-              open={isRoalityDetailOpen}
-              handleClose={() => setIsRoalityDetailOpen(!isRoalityDetailOpen)}
-              type="royalty"
-              title="Creator's lifetime fee. Suggested: 0%, 2.5%, 10%, 25%. Maximum is 50%. Royalty is the amount you receive for each sale of your artwork on the secondary market."
-            />
-            <InfoIcon
-              style={{ position: 'absolute', top: 32, right: 8, color: '#00AB55' }}
-              onClick={() => setIsRoalityDetailOpen(!isRoalityDetailOpen)}
-            />
+            <Tooltip title="Creator's lifetime fee. Suggested: 0%, 2.5%, 10%, 25%. Maximum is 50%. Royalty is the amount you receive for each sale of your artwork on the secondary market.">
+              <InfoIcon style={{ position: 'absolute', top: 32, right: 8, color: '#00AB55' }} />
+            </Tooltip>
             {isRoyalityError ? (
               <FormHelperText error>
                 Please Enter royalty upto 50% with max 1 decimal value.

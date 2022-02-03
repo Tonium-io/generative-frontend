@@ -1,7 +1,9 @@
 // import { useFormik } from 'formik';
 import { useContext } from 'react';
+// import { Link as RouterLink } from 'react-router-dom';
 // material
 import { Container, Stack, Typography } from '@mui/material';
+// import AddIcon from '@mui/icons-material/Add';
 // components
 import Page from '../components/Page';
 import StoreContext from '../store/StoreContext';
@@ -54,6 +56,14 @@ export default function MyNft() {
           {myNfts.map((val, index) => (
             <CollectionCard key={index} collectionDetails={val.collection} />
           ))}
+          {/* <Link underline="none" component={RouterLink} to="/dashboard/create">
+            <Card variant="outlined" sx={{ mb: 2, px: 2, py: 2 }}>
+              <Stack direction="column" alignItems="center">
+                <AddIcon />
+                Create New Collection
+              </Stack>
+            </Card>
+          </Link> */}
         </Stack>
 
         {/* <Stack

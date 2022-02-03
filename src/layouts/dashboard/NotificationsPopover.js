@@ -226,7 +226,7 @@ export default function NotificationsPopover() {
       >
         <Box sx={{ display: 'flex', alignItems: 'center', py: 2, px: 2.5 }}>
           <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="subtitle1">Notifications (soon)</Typography>
+            <Typography variant="subtitle1">Notifications</Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               You have {totalUnRead + messages?.length} unread messages
             </Typography>
@@ -278,7 +278,7 @@ export default function NotificationsPopover() {
 
         <Box sx={{ p: 1 }}>
           <Button fullWidth disableRipple component={RouterLink} to="#">
-            View All (soon)
+            View All
           </Button>
         </Box>
       </MenuPopover>

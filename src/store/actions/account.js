@@ -30,5 +30,8 @@ export const logout = async (state, dispatch) => {
       address: null
     }
   });
+  dispatch({
+    type: 'REMOVE_NOTIFICATION'
+  });
   localStorage.removeItem('ton_inited');
 };
