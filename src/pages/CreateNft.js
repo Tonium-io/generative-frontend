@@ -54,7 +54,8 @@ import {
   everscaleDeployWithWallet,
   everscaleSendMessage,
   everscaleSignWithWallet,
-  readBinaryFile
+  readBinaryFile,
+  retriablePromise
 } from '../utils/helpers';
 
 // let ipfs;
@@ -523,10 +524,20 @@ export default function CreateNFT() {
         },
         signer: signerExternal(account.public)
       };
+
       // eslint-disable-next-line no-await-in-loop
-      const signed = await everscaleSignWithWallet(ton.provider, ton.client, encodeSendMetadata);
-      // eslint-disable-next-line no-await-in-loop
-      await everscaleSendMessage(ton.client, signed.message, uploader.abi);
+      await retriablePromise(
+        async () => {
+          const signed = await everscaleSignWithWallet(
+            ton.provider,
+            ton.client,
+            encodeSendMetadata
+          );
+          await everscaleSendMessage(ton.client, signed.message, uploader.abi);
+        },
+        0,
+        5000
+      )();
     }
     // await Promise.all(
     //   metadata.map(async (item) => {
