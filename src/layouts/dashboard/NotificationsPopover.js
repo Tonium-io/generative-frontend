@@ -175,13 +175,15 @@ function NotificationItem({ notification }) {
 
 export default function NotificationsPopover() {
   const {
-    state: { messages }
+    state: { messages },
+    dispatch
   } = useContext(StoreContext);
 
   const anchorRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState(NOTIFICATIONS);
   const totalUnRead = notifications.filter((item) => item.isUnRead === true).length;
+  const totalCustomUnRead = messages.filter((item) => item.isUnRead === true).length;
 
   const handleOpen = () => {
     setOpen(true);
@@ -198,6 +200,9 @@ export default function NotificationsPopover() {
         isUnRead: false
       }))
     );
+    dispatch({
+      type: 'READ_NOTIFICATION'
+    });
   };
 
   return (
@@ -213,7 +218,7 @@ export default function NotificationsPopover() {
           })
         }}
       >
-        <Badge badgeContent={totalUnRead + messages?.length} color="error">
+        <Badge badgeContent={totalUnRead + totalCustomUnRead} color="error">
           <Icon icon={bellFill} width={20} height={20} />
         </Badge>
       </IconButton>
@@ -228,7 +233,7 @@ export default function NotificationsPopover() {
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="subtitle1">Notifications</Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              You have {totalUnRead + messages?.length} unread messages
+              You have {totalUnRead + totalCustomUnRead} unread messages
             </Typography>
           </Box>
 

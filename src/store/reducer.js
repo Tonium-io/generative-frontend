@@ -35,6 +35,14 @@ const reducer = (state, action) => {
         ...state,
         messages: []
       };
+    case 'READ_NOTIFICATION':
+      return {
+        ...state,
+        messages: state.messages.map((notification) => ({
+          ...notification,
+          isUnRead: false
+        }))
+      };
     case 'ADD_ROOTADDRESS':
       return {
         ...state,
