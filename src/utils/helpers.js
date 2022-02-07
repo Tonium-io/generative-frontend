@@ -18,8 +18,14 @@ export const readBinaryFile = async (file) => {
  */
 export const everscaleClient = (connectionName) => {
   const endpoints = {
-    mainnet: ['main2.ton.dev', 'main3.ton.dev', 'main4.ton.dev'],
-    testnet: ['net1.ton.dev', 'net5.ton.dev'],
+    mainnet: [
+      'eri01.main.everos.dev',
+      'gra01.main.everos.dev',
+      'gra02.main.everos.dev',
+      'lim01.main.everos.dev',
+      'rbx01.main.everos.dev'
+    ],
+    testnet: ['eri01.net.everos.dev', 'rbx01.net.everos.dev', 'gra01.net.everos.dev'],
     fld: ['gql.custler.net']
   };
   return new TonClient({
@@ -148,3 +154,17 @@ export const everscaleDeployWithWallet = async (
     provider.sendMessage({ ...providerOptions, recipient });
   });
 };
+
+export function retriablePromise(fn, maxRetries = 0, delay = 3000) {
+  return async function wrapper(...args) {
+    try {
+      console.log('Wrapper try block');
+      return await fn(...args);
+    } catch (e) {
+      console.error('Wrapper error', e);
+      console.error('Retries left', maxRetries);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return wrapper(...args);
+    }
+  };
+}
