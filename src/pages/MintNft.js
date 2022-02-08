@@ -20,13 +20,19 @@ import UploaderABI from '../assets/contracts/UploadDeGenerative.abi.json';
 import UploaderTVC from '../assets/contracts/UploadDeGenerative.tvc';
 import RootABI from '../assets/contracts/NftRoot.abi.json';
 import DataABI from '../assets/contracts/Data.abi.json';
-import { everscaleAccount, everscaleSendMessage, everscaleSignWithWallet } from '../utils/helpers';
+import {
+  everscaleAccount,
+  everscaleSendMessage,
+  everscaleSignWithWallet,
+  retriablePromise
+} from '../utils/helpers';
 import MintNFTModal from '../components/_dashboard/nft/MintNFTModal';
 import ShopProductCard from '../components/_dashboard/products/ProductCard';
 
 const MintNft = () => {
   const {
-    state: { account, ton, newRootAddress }
+    state: { account, ton, newRootAddress, price },
+    dispatch
   } = useContext(StoreContext);
   const [modal, setModal] = useState({ isOpen: false, title: undefined, content: undefined });
 
@@ -74,13 +80,19 @@ const MintNft = () => {
     const compressed = Buffer.from(dataInfo.decoded.output.metadata, 'hex').toString('base64');
     const zstd = await ton.client.utils.decompress_zstd({ compressed });
     const metadata = JSON.parse(Buffer.from(zstd.decompressed, 'base64').toString());
-    console.log(metadata);
 
     const product = {
       name: metadata.name,
       cover: metadata.image.replace('ipfs://', 'https://ipfs.io/ipfs/'),
       price: metadata.price
     };
+    dispatch({
+      type: 'MINTNFT'
+    });
+    dispatch({
+      type: 'ADD_NOTIFICATION',
+      payload: 'Minted NFT Successfully!'
+    });
     setModal({
       isOpen: true,
       title: 'Minted token',
@@ -128,8 +140,14 @@ const MintNft = () => {
       },
       signer: signerExternal(account.public)
     };
-    const signed = await everscaleSignWithWallet(ton.provider, ton.client, encodeMintByAdmin);
-    await everscaleSendMessage(ton.client, signed.message, uploader.abi);
+    await retriablePromise(
+      async () => {
+        const signed = await everscaleSignWithWallet(ton.provider, ton.client, encodeMintByAdmin);
+        await everscaleSendMessage(ton.client, signed.message, uploader.abi);
+      },
+      0,
+      5000
+    )();
 
     // Wait for minting completed
     // TODO: Do it in more pretty way
@@ -274,7 +292,7 @@ const MintNft = () => {
             <Formik
               initialValues={{
                 root: newRootAddress,
-                price: ''
+                price
               }}
               validationSchema={Yup.object().shape({
                 root: Yup.string().required(),

@@ -23,10 +23,10 @@ function MinedNft() {
           Raraity Value:
           {myNfts.map((elem) => {
             if (elem.collection.rootAddress === pathname.split('/').pop()) {
-              if (elem.layerData.length === 1) {
+              if (elem.layer === 1) {
                 return '10%';
               }
-              if (elem.layerData.length === 2) {
+              if (elem.layer === 2) {
                 return '5%';
               }
               return '4.5%';
@@ -49,7 +49,9 @@ function MinedNft() {
                     key={index}
                     nft={val}
                     ipfsUploaded={elem.ipfsUploaded}
+                    price={elem.price}
                     rootAddress={pathname.split('/').pop()}
+                    status={elem.status}
                   />
                 </Grid>
               ));

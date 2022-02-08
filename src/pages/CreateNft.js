@@ -226,9 +226,11 @@ export default function CreateNFT() {
     dispatch({
       type: 'ADD_NFTDATA',
       payload: {
-        layerData,
+        layer: layerData.length,
         nftData,
         ipfsUploaded: uploadedData[0],
+        price: nftPrice,
+        status: 'non-minted',
         collection: {
           collectionName,
           collectionDesc,
@@ -989,7 +991,6 @@ export default function CreateNFT() {
             </Button>
           )}
           <NFTList nfts={nftData} />
-          <CollectionCard collectionData={collectionData} />
           {!!nftData.length && (
             <Button
               onClick={getDataForBlockchain}
@@ -1000,6 +1001,7 @@ export default function CreateNFT() {
               GetDataForBlockchain
             </Button>
           )}
+          <CollectionCard collectionData={collectionData} />
         </Box>
       </Container>
       {/* Modals and Dailog Box */}

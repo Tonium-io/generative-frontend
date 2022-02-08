@@ -53,6 +53,23 @@ const reducer = (state, action) => {
         ...state,
         myNfts: [...state.myNfts, action.payload]
       };
+    case 'ADD_PRICE':
+      return {
+        ...state,
+        price: action.payload
+      };
+    case 'MINTNFT':
+      return {
+        ...state,
+        myNfts: state.myNfts.map((nft) =>
+          state.newRootAddress === nft.collection.rootAddress
+            ? {
+                ...nft,
+                status: 'minted'
+              }
+            : nft
+        )
+      };
     default:
       throw new Error();
   }
