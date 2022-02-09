@@ -9,7 +9,7 @@ import { BaseOptionChartStyle } from './components/charts/BaseOptionChart';
 
 import CreateReducer from './store/CreateReducer';
 import StoreContext from './store/StoreContext';
-
+import './style.css';
 // ----------------------------------------------------------------------
 
 export default function App() {

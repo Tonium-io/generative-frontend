@@ -120,6 +120,7 @@ export default function CreateNFT() {
   const [isAlreadyUploaded, setIsAlreadyUploaded] = useState(false);
   const [previouslyUploaded, setPreviouslyUploaded] = useState();
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [isDeployed, setIsDeployed] = useState(false);
 
   const generateImageRef = useRef(null);
   const layerRef = useRef(null);
@@ -207,6 +208,7 @@ export default function CreateNFT() {
 
     const rootAddress = await uploadBlockchainData(returnData);
     setIsAlreadyUploaded(true);
+    setIsDeployed(true);
     setPreviouslyUploaded(nftData);
     if (rootAddress) {
       dispatch({
@@ -996,6 +998,7 @@ export default function CreateNFT() {
               onClick={getDataForBlockchain}
               variant="contained"
               fullWidth
+              className={isDeployed ? 'greyBackground' : ''}
               sx={{ marginTop: 5 }}
             >
               GetDataForBlockchain
