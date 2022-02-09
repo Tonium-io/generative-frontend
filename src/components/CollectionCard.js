@@ -72,7 +72,10 @@ function CollectionCard({ collectionData, collectionDetails }) {
                         spacing={2}
                       >
                         <h3>Root address for minting</h3>
-                        <ContentCopyIcon onClick={() => handleCopied(item)} />
+                        <ContentCopyIcon
+                          onClick={() => handleCopied(item)}
+                          style={{ cursor: 'pointer' }}
+                        />
                       </Stack>
                       <CopyToClipboard text={item} onCopy={() => {}}>
                         <div style={{ wordBreak: 'break-all', cursor: 'pointer' }}>{item}</div>

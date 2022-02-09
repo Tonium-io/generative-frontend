@@ -22,11 +22,13 @@ const NFTCardImage = styled('img')({
 MinedNFTCard.propTypes = {
   nft: PropTypes.object,
   ipfsUploaded: PropTypes.string,
-  rootAddress: PropTypes.string
+  rootAddress: PropTypes.string,
+  price: PropTypes.string,
+  status: PropTypes.string
 };
 
-export default function MinedNFTCard({ nft, ipfsUploaded, rootAddress }) {
-  const { name, image, status, traits, ipfs } = nft;
+export default function MinedNFTCard({ nft, ipfsUploaded, rootAddress, price, status }) {
+  const { name, image, traits, ipfs } = nft;
   // added this state to intiliaze Nft as NFT ... later will change
   const [isMinted, setIsMinted] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -45,21 +47,19 @@ export default function MinedNFTCard({ nft, ipfsUploaded, rootAddress }) {
     <>
       <Card onClick={handleCardClick} sx={{ mb: 2 }}>
         <Box sx={{ pt: '100%', position: 'relative' }}>
-          {status && (
-            <Label
-              variant="filled"
-              color="error"
-              sx={{
-                zIndex: 9,
-                top: 16,
-                right: 16,
-                position: 'absolute',
-                textTransform: 'uppercase'
-              }}
-            >
-              Non-Minted
-            </Label>
-          )}
+          <Label
+            variant="filled"
+            color={status === 'minted' ? 'success' : 'error'}
+            sx={{
+              zIndex: 9,
+              top: 16,
+              right: 16,
+              position: 'absolute',
+              textTransform: 'uppercase'
+            }}
+          >
+            {status === 'minted' ? 'Minted' : 'Non-Minted'}
+          </Label>
           <NFTCardImage alt={name} src={image} />
           <div
             className="frostedWrapper"
@@ -99,7 +99,7 @@ export default function MinedNFTCard({ nft, ipfsUploaded, rootAddress }) {
               View on IPFS
             </Button>
           )}
-          {ipfsUploaded && (
+          {ipfsUploaded && status === 'minted' && (
             <Button
               variant="contained"
               href={`https://ipfs.io/ipfs/${ipfsUploaded}`}
@@ -115,6 +115,7 @@ export default function MinedNFTCard({ nft, ipfsUploaded, rootAddress }) {
         handleClose={handleClose}
         handleMint={() => setIsMinted(true)}
         rootAddress={rootAddress}
+        price={price}
       />
     </>
   );

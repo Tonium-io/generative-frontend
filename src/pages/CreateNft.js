@@ -120,6 +120,7 @@ export default function CreateNFT() {
   const [isAlreadyUploaded, setIsAlreadyUploaded] = useState(false);
   const [previouslyUploaded, setPreviouslyUploaded] = useState();
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [isDeployed, setIsDeployed] = useState(false);
 
   const generateImageRef = useRef(null);
   const layerRef = useRef(null);
@@ -207,6 +208,7 @@ export default function CreateNFT() {
 
     const rootAddress = await uploadBlockchainData(returnData);
     setIsAlreadyUploaded(true);
+    setIsDeployed(true);
     setPreviouslyUploaded(nftData);
     if (rootAddress) {
       dispatch({
@@ -226,9 +228,11 @@ export default function CreateNFT() {
     dispatch({
       type: 'ADD_NFTDATA',
       payload: {
-        layerData,
+        layer: layerData.length,
         nftData,
         ipfsUploaded: uploadedData[0],
+        price: nftPrice,
+        status: 'non-minted',
         collection: {
           collectionName,
           collectionDesc,
@@ -989,17 +993,18 @@ export default function CreateNFT() {
             </Button>
           )}
           <NFTList nfts={nftData} />
-          <CollectionCard collectionData={collectionData} />
           {!!nftData.length && (
             <Button
               onClick={getDataForBlockchain}
               variant="contained"
               fullWidth
+              className={isDeployed ? 'greyBackground' : ''}
               sx={{ marginTop: 5 }}
             >
               GetDataForBlockchain
             </Button>
           )}
+          <CollectionCard collectionData={collectionData} />
         </Box>
       </Container>
       {/* Modals and Dailog Box */}

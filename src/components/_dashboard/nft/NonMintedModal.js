@@ -15,10 +15,11 @@ DeleteCardDialog.propTypes = {
   open: PropTypes.bool,
   handleClose: PropTypes.func,
   handleMint: PropTypes.func,
-  rootAddress: PropTypes.string
+  rootAddress: PropTypes.string,
+  price: PropTypes.string
 };
 
-export default function DeleteCardDialog({ open, handleClose, handleMint, rootAddress }) {
+export default function DeleteCardDialog({ open, handleClose, handleMint, rootAddress, price }) {
   const history = useNavigate();
 
   const { dispatch } = useContext(StoreContext);
@@ -44,6 +45,10 @@ export default function DeleteCardDialog({ open, handleClose, handleMint, rootAd
               dispatch({
                 type: 'ADD_ROOTADDRESS',
                 payload: rootAddress
+              });
+              dispatch({
+                type: 'ADD_PRICE',
+                payload: price
               });
               history(`/dashboard/mint`);
               handleMint();

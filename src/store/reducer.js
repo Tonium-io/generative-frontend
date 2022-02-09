@@ -35,6 +35,14 @@ const reducer = (state, action) => {
         ...state,
         messages: []
       };
+    case 'READ_NOTIFICATION':
+      return {
+        ...state,
+        messages: state.messages.map((notification) => ({
+          ...notification,
+          isUnRead: false
+        }))
+      };
     case 'ADD_ROOTADDRESS':
       return {
         ...state,
@@ -44,6 +52,23 @@ const reducer = (state, action) => {
       return {
         ...state,
         myNfts: [...state.myNfts, action.payload]
+      };
+    case 'ADD_PRICE':
+      return {
+        ...state,
+        price: action.payload
+      };
+    case 'MINTNFT':
+      return {
+        ...state,
+        myNfts: state.myNfts.map((nft) =>
+          state.newRootAddress === nft.collection.rootAddress
+            ? {
+                ...nft,
+                status: 'minted'
+              }
+            : nft
+        )
       };
     default:
       throw new Error();
