@@ -1,7 +1,7 @@
 import faker from 'faker';
 import PropTypes from 'prop-types';
 import { noCase } from 'change-case';
-import { useRef, useState, useContext } from 'react';
+import { useRef, useState, useContext, useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 import { set, sub, formatDistanceToNowStrict } from 'date-fns';
 import { Icon } from '@iconify/react';
@@ -175,7 +175,7 @@ function NotificationItem({ notification }) {
 
 export default function NotificationsPopover() {
   const {
-    state: { messages },
+    state: { messages, account },
     dispatch
   } = useContext(StoreContext);
 
@@ -184,6 +184,18 @@ export default function NotificationsPopover() {
   const [notifications, setNotifications] = useState(NOTIFICATIONS);
   const totalUnRead = notifications.filter((item) => item.isUnRead === true).length;
   const totalCustomUnRead = messages.filter((item) => item.isUnRead === true).length;
+
+  useEffect(() => {
+    if (!account.isReady) {
+      setNotifications(
+        notifications.map((notification) => ({
+          ...notification,
+          isUnRead: false
+        }))
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account]);
 
   const handleOpen = () => {
     setOpen(true);
@@ -237,7 +249,7 @@ export default function NotificationsPopover() {
             </Typography>
           </Box>
 
-          {totalUnRead > 0 && (
+          {totalUnRead + totalCustomUnRead > 0 && (
             <Tooltip title=" Mark all as read">
               <IconButton color="primary" onClick={handleMarkAllAsRead}>
                 <Icon icon={doneAllFill} width={20} height={20} />
