@@ -56,16 +56,20 @@ const CreateReducer = () => {
   useEffect(() => {
     InitTon(dispatch).then();
 
-    if (window.ton) {
-      window.ton.on('networkChanged', (data) => {
-        dispatch({
-          type: 'SET_TON',
-          payload: {
-            client: everscaleClient(data.selectedConnection)
-          }
-        });
-      });
+    // if (window.ton) {
+    if (!window.hasTonProvider) {
+      console.error('no ton provider');
+      return;
     }
+    window.ton.on('networkChanged', (data) => {
+      dispatch({
+        type: 'SET_TON',
+        payload: {
+          client: everscaleClient(data.selectedConnection)
+        }
+      });
+    });
+    // }
   }, []);
 
   useEffect(() => {

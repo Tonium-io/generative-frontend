@@ -5,7 +5,9 @@ import {
   Button,
   FormHelperText,
   Typography,
-  Link
+  Link,
+  Backdrop,
+  CircularProgress
 } from '@mui/material';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
@@ -35,6 +37,7 @@ const MintNft = () => {
     dispatch
   } = useContext(StoreContext);
   const [modal, setModal] = useState({ isOpen: false, title: undefined, content: undefined });
+  const [isSpinner, setIsSpinner] = useState(false);
 
   const getRootData = async (address) => {
     const root = await everscaleAccount(RootABI, undefined, { address, client: ton.client });
@@ -93,6 +96,7 @@ const MintNft = () => {
       type: 'ADD_NOTIFICATION',
       payload: 'Minted NFT Successfully!'
     });
+    setIsSpinner(false);
     setModal({
       isOpen: true,
       title: 'Minted token',
@@ -129,6 +133,7 @@ const MintNft = () => {
       alert('All tokens are minted :(');
       return;
     }
+    setIsSpinner(true);
 
     // Run contract `mintByAdmin` method
     const encodeMintByAdmin = {
@@ -182,6 +187,7 @@ const MintNft = () => {
       alert('All tokens are minted :(');
       return;
     }
+    setIsSpinner(true);
 
     // Mint token
     await ton.provider.sendMessage({
@@ -238,6 +244,18 @@ const MintNft = () => {
 
   return (
     <Page title="Mint NFT">
+      <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }} open={isSpinner}>
+        <CircularProgress color="inherit" />
+        <div
+          style={{
+            color: '#fff',
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+            position: 'absolute',
+            top: 70,
+            right: 70
+          }}
+        />
+      </Backdrop>
       <Container>
         <Grid container spacing={2}>
           <Grid item xs={12} md={6}>

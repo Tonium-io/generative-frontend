@@ -41,6 +41,7 @@ import CloseStopProcess from '../components/_dashboard/nft/CloseStopProcess';
 import useKeyPress from '../components/useKeyPress';
 import CollectionCard from '../components/CollectionCard';
 import CreateDuplicateCollection from '../components/_dashboard/nft/CreateDuplicateCollection';
+import ClearAllModal from '../components/_dashboard/nft/ClearAllModal';
 
 import StoreContext from '../store/StoreContext';
 import UploaderTVC from '../assets/contracts/UploadDeGenerative.tvc';
@@ -100,11 +101,27 @@ export default function CreateNFT() {
   const [layerData, setLayerData] = useState(
     myNfts.length && myNfts[myNfts.length - 1].layerData ? myNfts[myNfts.length - 1].layerData : []
   );
-  const [totalImages, setTotalImages] = useState(10);
-  const [royalty, setRoyalty] = useState(0);
+  const [totalImages, setTotalImages] = useState(
+    myNfts.length && myNfts[myNfts.length - 1].collection.totalImages
+      ? myNfts[myNfts.length - 1].collection.totalImages
+      : 10
+  );
+  const [royalty, setRoyalty] = useState(
+    myNfts.length && myNfts[myNfts.length - 1].collection.royalty
+      ? myNfts[myNfts.length - 1].collection.royalty
+      : 0
+  );
   const [isRoyalityError, setIsRoyalityError] = useState(false);
-  const [nftPrice, setNftPrice] = useState(1);
-  const [nftPriceCoeff, setNftPriceCoeff] = useState(100);
+  const [nftPrice, setNftPrice] = useState(
+    myNfts.length && myNfts[myNfts.length - 1].collection.nftPrice
+      ? myNfts[myNfts.length - 1].collection.nftPrice
+      : 1
+  );
+  const [nftPriceCoeff, setNftPriceCoeff] = useState(
+    myNfts.length && myNfts[myNfts.length - 1].collection.nftPriceCoeff
+      ? myNfts[myNfts.length - 1].collection.nftPriceCoeff
+      : 100
+  );
   const [nftData, setNftData] = useState(
     myNfts.length && myNfts[myNfts.length - 1].nftData ? myNfts[myNfts.length - 1].nftData : []
   );
@@ -116,11 +133,18 @@ export default function CreateNFT() {
   const [isSpinner, setIsSpinner] = useState(false);
   const [isStopModal, setIsStopModal] = useState(false);
   const [isDataUploading, setIsDataUploading] = useState(false);
-  const [collectionData, setCollectionData] = useState([]);
+  const [collectionData, setCollectionData] = useState(
+    myNfts.length && myNfts[myNfts.length - 1].collectionData
+      ? myNfts[myNfts.length - 1].collectionData
+      : []
+  );
   const [isAlreadyUploaded, setIsAlreadyUploaded] = useState(false);
   const [previouslyUploaded, setPreviouslyUploaded] = useState();
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
-  const [isDeployed, setIsDeployed] = useState(false);
+  const [isDeployed, setIsDeployed] = useState(
+    !!(myNfts.length && myNfts[myNfts.length - 1].collection.rootAddress)
+  );
+  const [isClearAlllModalOpen, setIsClearAlllModalOpen] = useState(false);
 
   const generateImageRef = useRef(null);
   const layerRef = useRef(null);
@@ -229,6 +253,8 @@ export default function CreateNFT() {
       type: 'ADD_NFTDATA',
       payload: {
         layer: layerData.length,
+        layerData,
+        collectionData: [...collectionData, rootAddress],
         nftData,
         ipfsUploaded: uploadedData[0],
         price: nftPrice,
@@ -236,7 +262,11 @@ export default function CreateNFT() {
         collection: {
           collectionName,
           collectionDesc,
-          rootAddress
+          rootAddress,
+          nftPrice,
+          nftPriceCoeff,
+          royalty,
+          totalImages
         }
       }
     });
@@ -994,14 +1024,27 @@ export default function CreateNFT() {
           )}
           <NFTList nfts={nftData} />
           {!!nftData.length && (
+            <>
+              <Button
+                onClick={getDataForBlockchain}
+                variant="contained"
+                fullWidth
+                className={isDeployed ? 'greyBackground' : ''}
+                sx={{ marginTop: 5 }}
+              >
+                GetDataForBlockchain
+              </Button>
+            </>
+          )}
+          {isDeployed && (
             <Button
-              onClick={getDataForBlockchain}
               variant="contained"
               fullWidth
-              className={isDeployed ? 'greyBackground' : ''}
-              sx={{ marginTop: 5 }}
+              color="error"
+              sx={{ marginTop: 2 }}
+              onClick={() => setIsClearAlllModalOpen(true)}
             >
-              GetDataForBlockchain
+              Clear All
             </Button>
           )}
           <CollectionCard collectionData={collectionData} />
@@ -1013,6 +1056,26 @@ export default function CreateNFT() {
         handleClose={handleClose}
         handleDelete={currentDeleting === 'card' ? handleImageDelete : handleDeleteLayer}
         currentDeleting={currentDeleting}
+      />
+      <ClearAllModal
+        open={isClearAlllModalOpen}
+        handleClose={() => setIsClearAlllModalOpen(!isClearAlllModalOpen)}
+        handleDelete={() => {
+          setCollectionName(' ');
+          setCollectionDesc(' ');
+          setNftPrice(1);
+          setNftPriceCoeff(100);
+          setNftData([]);
+          setRoyalty(0);
+          setLayerData([]);
+          setIsDeployed(false);
+          setIsClearAlllModalOpen(false);
+          setTotalImages(10);
+          generateImageRef.current.scrollIntoView({
+            behavior: 'smooth',
+            inline: 'center'
+          });
+        }}
       />
       <DetailModal handleModalClose={handleModalClose} {...modal} />
       <CloseStopProcess
