@@ -148,6 +148,7 @@ export default function CreateNFT() {
 
   const generateImageRef = useRef(null);
   const layerRef = useRef(null);
+  const clearButtonRef = useRef(null);
 
   const { getRootProps, getInputProps, acceptedFiles, isDragActive } = useDropzone();
 
@@ -234,6 +235,10 @@ export default function CreateNFT() {
     setIsAlreadyUploaded(true);
     setIsDeployed(true);
     setPreviouslyUploaded(nftData);
+    clearButtonRef.current.scrollIntoView({
+      behavior: 'smooth',
+      inline: 'center'
+    });
     if (rootAddress) {
       dispatch({
         type: 'ADD_NOTIFICATION',
@@ -1042,6 +1047,7 @@ export default function CreateNFT() {
               fullWidth
               color="error"
               sx={{ marginTop: 2 }}
+              ref={clearButtonRef}
               onClick={() => setIsClearAlllModalOpen(true)}
             >
               Clear All
